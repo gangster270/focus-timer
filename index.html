@@ -211,7 +211,7 @@
   .edsub .sdel:hover{color:var(--high);}
 
   /* ⋯ 작업 메뉴 */
-  .tmenu{position:fixed; z-index:300; background:#fff; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.16); padding:6px; min-width:165px;}
+  .tmenu{position:fixed; z-index:300; background:#fff; border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.16); padding:6px; min-width:165px; max-width:238px;}
   .tmenu button{display:flex; width:100%; border:none; background:none; text-align:left; padding:8px 10px; border-radius:8px;
     font-size:13px; font-weight:600; font-family:inherit; cursor:pointer; gap:8px; align-items:center; color:var(--text);}
   .tmenu button:hover{background:var(--bg);}
@@ -930,8 +930,13 @@ let data=load();
 const DAYS=['월','화','수','목','금','토','일'];
 const CAT={work:{label:'업무',icon:'💼'}, personal:{label:'개인',icon:'🏠'}};
 const PCOLOR={high:'var(--high)',mid:'var(--mid)',low:'var(--low)'};
-const BAR_COLORS=['#3182F6','#15B886','#FF9500','#F04452','#9772FB','#00A9B5','#E8590C','#D6336C'];
-function projColor(name){let h=0; for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0; return BAR_COLORS[h%BAR_COLORS.length];}
+const BAR_COLORS=[
+  '#3182F6','#15B886','#FF9500','#F04452','#9772FB','#00A9B5','#E8590C','#D6336C',
+  '#1B64DA','#4DABF7','#364FC7','#748FFC','#15AABF','#0B7285','#099268','#2B8A3E',
+  '#40C057','#66A80F','#E67700','#F76707','#D9480F','#C92A2A','#FF6B6B','#E64980',
+  '#9C36B5','#7048E8','#8D6E63','#495057'];
+/* 프로젝트 자동 색은 기존 8색 기준 유지 (팔레트를 늘려도 기존 프로젝트 색이 안 바뀌게) */
+function projColor(name){let h=0; for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0; return BAR_COLORS[h%8];}
 function barColor(t){return t.color||(t.project?projColor(t.project):'#3182F6');}
 
 /* ===== 날짜 ===== */
@@ -1440,11 +1445,12 @@ function openTaskMenu(ds,id,anchor){
     `<div class="tm-label">막대 색</div><div class="tm-colors"><i class="auto" data-c="" title="자동 (프로젝트 색)"></i>${BAR_COLORS.map(c=>`<i style="background:${c}" data-c="${c}"></i>`).join('')}</div>`+
     '<button data-m="del" class="tm-del">🗑 삭제</button>';
   m.classList.remove('hidden');
+  const vw=Math.max(document.documentElement.clientWidth,innerWidth)||1e9, vh=Math.max(document.documentElement.clientHeight,innerHeight)||1e9;
   const r=anchor.getBoundingClientRect(), mw=m.offsetWidth;
-  let x=Math.min(r.right-mw+12, innerWidth-mw-8); if(x<8)x=8;
+  let x=Math.min(r.right-mw+12, vw-mw-8); if(x<8)x=8;
   m.style.left=x+'px'; m.style.top=(r.bottom+4)+'px';
   const mh=m.offsetHeight;
-  if(r.bottom+4+mh>innerHeight-8) m.style.top=Math.max(8,r.top-mh-4)+'px';
+  if(r.bottom+4+mh>vh-8) m.style.top=Math.max(8,r.top-mh-4)+'px';
 }
 function closeTaskMenu(){document.getElementById('taskMenu').classList.add('hidden'); menuRef=null;}
 document.getElementById('taskMenu').addEventListener('click',e=>{
