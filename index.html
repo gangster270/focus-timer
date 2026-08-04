@@ -23,7 +23,7 @@
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Pretendard',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
     background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased; padding:20px; min-height:100vh;}
-  .wrap{max-width:1320px; margin:0 auto;}
+  .wrap{max-width:2480px; margin:0 auto;}
 
   .topbar{display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px;}
   .top-right{display:flex; gap:8px; align-items:center;}
@@ -69,7 +69,7 @@
   .sep{width:1px; height:13px; background:var(--border); margin:0 2px;}
 
   .week-scroll{overflow-x:auto; padding-bottom:6px;}
-  .week-grid{display:grid; grid-template-columns:repeat(7,minmax(280px,1fr)); gap:12px; min-width:2032px;}
+  .week-grid{display:grid; grid-template-columns:repeat(7,minmax(240px,1fr)); gap:12px; min-width:1752px;}
   .day-col{background:var(--card); border-radius:16px; box-shadow:var(--shadow); display:flex; flex-direction:column; min-height:340px; overflow:hidden;}
   .day-col.today{box-shadow:0 0 0 2px var(--primary), var(--shadow);}
   .day-head{padding:13px 14px 10px; border-bottom:1px solid var(--border2); display:flex; align-items:center; justify-content:space-between;}
@@ -170,7 +170,7 @@
   .mbar-space{flex-shrink:0;}
 
   /* 기간 막대 (주간) */
-  .period-strip{display:grid; grid-template-columns:repeat(7,minmax(280px,1fr)); gap:6px 12px; min-width:2032px; margin-bottom:10px;}
+  .period-strip{display:grid; grid-template-columns:repeat(7,minmax(240px,1fr)); gap:6px 12px; min-width:1752px; margin-bottom:10px;}
   .pbar{height:30px; border-radius:9px; color:#fff; font-size:12px; font-weight:700; display:flex; align-items:center; gap:6px;
     padding:0 10px; cursor:pointer; overflow:hidden; white-space:nowrap; box-shadow:var(--shadow); transition:.12s;}
   .pbar:hover{filter:brightness(1.07);}
@@ -378,7 +378,7 @@
       radial-gradient(380px 380px at 72% 92%, rgba(151,114,251,.14), transparent 70%),
       radial-gradient(300px 300px at 22% 88%, rgba(21,184,134,.13), transparent 70%);
     filter:blur(12px);}
-  .timer-layout{position:relative; z-index:1; display:grid; grid-template-columns:minmax(300px,390px) minmax(300px,1fr); gap:16px; align-items:start;}
+  .timer-layout{position:relative; z-index:1; display:grid; grid-template-columns:minmax(300px,390px) minmax(300px,1fr); gap:16px; align-items:start; max-width:1320px; margin:0 auto;}
   @media(max-width:880px){.timer-layout{grid-template-columns:1fr;}}
   .timer-left{padding:20px 18px 16px; border-radius:30px;
     background:linear-gradient(150deg,rgba(255,255,255,.72),rgba(255,255,255,.34));
