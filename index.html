@@ -871,6 +871,7 @@
           <input type="text" class="edit-text" id="calUrl" readonly style="flex:1; margin:0; font-size:12px;" placeholder="주소를 불러오는 중…">
           <button id="calCopyBtn" style="padding:0 14px; border:1px solid var(--border); background:#fff; border-radius:11px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px; white-space:nowrap;">복사</button>
         </div>
+        <div id="calStatus" style="font-size:12px; color:var(--sub); line-height:1.6; margin-bottom:10px;"></div>
         <details style="font-size:12px; color:var(--sub); line-height:1.7;">
           <summary style="cursor:pointer; font-weight:700; color:var(--text);">아이폰·맥에서 구독하는 방법</summary>
           <b>아이폰</b>: 설정 → 앱 → 캘린더 → 캘린더 계정 → 계정 추가 → 기타 → <b>구독 캘린더 추가</b> → 주소 붙여넣기 → 다음 → 저장.<br>
@@ -1810,13 +1811,22 @@ async function calendarUrl(){
   }
   return owner?'https://gist.githubusercontent.com/'+owner+'/'+c.gist+'/raw/routines.ics':'';
 }
-async function refreshCalUrl(){const el=document.getElementById('calUrl'); if(!el) return; el.value=''; const u=await calendarUrl(); el.value=u||'주소를 가져오지 못했어요 (연결 상태를 확인하세요)';}
+async function refreshCalUrl(){
+  const el=document.getElementById('calUrl'), st=document.getElementById('calStatus'); if(!el) return;
+  el.value=''; const u=await calendarUrl(); el.value=u||'주소를 가져오지 못했어요 (연결 상태를 확인하세요)';
+  const n=(data.recur||[]).filter(r=>r.time&&r.alarm!==false).length;
+  if(st) st.innerHTML=n?'📤 캘린더 파일 올리는 중…':'⚠️ 시간이 있는 반복 업무가 아직 없어요. 🔁 반복에서 시간을 넣어 만들면 캘린더에 올라가요.';
+  if(!u) return;
+  const ok=await syncPush(); /* 주소를 복사하기 전에 파일이 확실히 올라가 있도록 */
+  if(st&&n) st.innerHTML=ok?`✅ 시간 있는 루틴 ${n}개가 캘린더 파일로 올라가 있어요 (${fmtClock(new Date())}). 폰 캘린더는 다음 새로 고침 때 반영돼요.`:'⚠️ 캘린더 파일 업로드에 실패했어요. 잠시 후 이 창을 다시 열어보세요.';
+}
 async function syncPush(){
   const c=syncCfg(); if(!c.token||!c.gist) return;
   try{
     const r=await fetch('https://api.github.com/gists/'+c.gist,{method:'PATCH',headers:ghHeaders(c.token),body:JSON.stringify({files:syncFiles()})});
     syncStatus(r.ok?('✅ 연결됨 · 마지막 저장 '+fmtClock(new Date())):('⚠️ 업로드 실패 ('+r.status+')'));
-  }catch(e){syncStatus('⚠️ 네트워크 오류 (오프라인?)');}
+    return r.ok;
+  }catch(e){syncStatus('⚠️ 네트워크 오류 (오프라인?)'); return false;}
 }
 async function syncPull(){
   const c=syncCfg(); if(!c.token||!c.gist) return false;
