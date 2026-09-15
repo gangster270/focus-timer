@@ -1,5 +1,6 @@
 import Cocoa
 import WebKit
+import UserNotifications
 
 /* ───────── 주간 업무 플래너 · macOS 앱 셸 ─────────
    index.html 을 WKWebView 로 띄우고, 웹에서 못 하는 일(파일 저장·열기, 항상 위, 미니 모드)을 대신한다.
@@ -43,7 +44,8 @@ let bridgeJS = """
 """
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate,
-                         WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate {
+                         WKScriptMessageHandler, WKNavigationDelegate, WKUIDelegate, WKDownloadDelegate,
+                         UNUserNotificationCenterDelegate {
     var window: NSWindow!
     var webView: WKWebView!
     var pinned = false
@@ -95,7 +97,63 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate,
         if let url = Bundle.main.url(forResource: "index", withExtension: "html") {
             webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
         }
+
+        let center = UNUserNotificationCenter.current()
+        center.delegate = self
+        center.requestAuthorization(options: [.alert, .sound]) { _, _ in }
+        if json != "null" { scheduleRoutineNotifications(json: json) }
+
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /* ── 시간이 있는 반복 업무 → 맥 기본 알림 (매일/매주/매달 반복) ── */
+    func scheduleRoutineNotifications(json: String) {
+        guard let d = json.data(using: .utf8),
+              let obj = try? JSONSerialization.jsonObject(with: d) as? [String: Any] else { return }
+        let recur = obj["recur"] as? [[String: Any]] ?? []
+        let center = UNUserNotificationCenter.current()
+        center.getPendingNotificationRequests { pending in
+            let old = pending.map { $0.identifier }.filter { $0.hasPrefix("routine-") }
+            center.removePendingNotificationRequests(withIdentifiers: old)
+            var count = 0
+            for r in recur {
+                guard let time = r["time"] as? String,
+                      (r["alarm"] as? Bool) ?? true,
+                      let id = r["id"] as? String,
+                      let text = r["text"] as? String else { continue }
+                let parts = time.split(separator: ":").compactMap { Int($0) }
+                guard parts.count == 2 else { continue }
+                let hour = parts[0], minute = parts[1]
+                let freq = r["freq"] as? String ?? "daily"
+                var comps: [DateComponents] = []
+                if freq == "daily" {
+                    comps.append(DateComponents(hour: hour, minute: minute))
+                } else if freq == "weekly" {
+                    // 플래너는 월요일=0 … 일요일=6, Apple 은 일요일=1 … 토요일=7
+                    for w in (r["weekdays"] as? [Int]) ?? [] {
+                        comps.append(DateComponents(hour: hour, minute: minute, weekday: w == 6 ? 1 : w + 2))
+                    }
+                } else if freq == "monthly", let day = r["monthday"] as? Int {
+                    comps.append(DateComponents(day: day, hour: hour, minute: minute))
+                }
+                for (i, c) in comps.enumerated() {
+                    if count >= 60 { return } // 시스템 예약 알림 개수 제한(64) 보호
+                    let content = UNMutableNotificationContent()
+                    content.title = "⏰ " + text
+                    content.body = "지금 할 시간이에요"
+                    content.sound = .default
+                    let trigger = UNCalendarNotificationTrigger(dateMatching: c, repeats: true)
+                    center.add(UNNotificationRequest(identifier: "routine-\(id)-\(i)", content: content, trigger: trigger))
+                    count += 1
+                }
+            }
+        }
+    }
+
+    /* 앱이 앞에 떠 있어도 배너로 표시 */
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner, .sound])
     }
 
     /* ── JS → 앱 메시지 ── */
@@ -105,6 +163,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate,
         case "save":
             if let s = message.body as? String {
                 try? s.data(using: .utf8)?.write(to: dataFile, options: .atomic)
+                scheduleRoutineNotifications(json: s)
             }
         case "ui":
             guard let s = message.body as? String,

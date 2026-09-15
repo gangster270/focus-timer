@@ -832,6 +832,12 @@
         <div class="sec-label">매달 며칠</div>
         <div class="date-row"><select id="rcMonthday" class="date-in"><option value="1">1일</option><option value="2">2일</option><option value="3">3일</option><option value="4">4일</option><option value="5">5일</option><option value="6">6일</option><option value="7">7일</option><option value="8">8일</option><option value="9">9일</option><option value="10">10일</option><option value="11">11일</option><option value="12">12일</option><option value="13">13일</option><option value="14">14일</option><option value="15">15일</option><option value="16">16일</option><option value="17">17일</option><option value="18">18일</option><option value="19">19일</option><option value="20">20일</option><option value="21">21일</option><option value="22">22일</option><option value="23">23일</option><option value="24">24일</option><option value="25">25일</option><option value="26">26일</option><option value="27">27일</option><option value="28">28일</option><option value="29">29일</option><option value="30">30일</option><option value="31">31일</option></select></div>
       </div>
+      <div class="sec-label">시간 · 알림 (선택)</div>
+      <div class="date-row" style="display:flex; gap:8px; align-items:center;">
+        <input type="time" class="date-in" id="rcTime" style="flex:1;">
+        <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px; white-space:nowrap; cursor:pointer;"><input type="checkbox" id="rcAlarm" checked> 📅 캘린더 알림</label>
+      </div>
+      <div style="font-size:11.5px; color:var(--sub); margin:-4px 0 12px; line-height:1.5;">시간을 넣으면 할일 앞에 시간이 붙어요. ☁️ 동기화를 켜두면 아이폰·맥 캘린더 구독으로 그 시간에 알림이 와요.</div>
       <button id="rcAdd" class="btn-save" style="width:100%; padding:13px; border:none; border-radius:11px; font-weight:700; cursor:pointer; font-family:inherit; font-size:14px;">+ 반복 추가</button>
       <div class="sec-label" style="margin-top:22px;">등록된 반복 업무</div>
       <div id="rcList" class="rc-list"></div>
@@ -859,6 +865,19 @@
           <button id="syncPushBtn" style="flex:1; padding:11px; border:1px solid var(--border); background:#fff; border-radius:11px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px;">올리기</button>
           <button id="syncDisconnectBtn" style="flex:1; padding:11px; border:1px solid var(--border); background:#fff; color:var(--high); border-radius:11px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px;">연결 해제</button>
         </div>
+        <div class="sec-label" style="margin-top:20px;">📅 아이폰·맥 캘린더 알림</div>
+        <div style="font-size:12px; color:var(--sub); line-height:1.6; margin-bottom:8px;">시간이 있는 🔁 반복 업무가 캘린더 구독 파일로 함께 올라가요. 아래 주소를 캘린더에 한 번 구독하면 그 시간에 기본 알림이 울리고, 캘린더 위젯에도 오늘 루틴이 보여요.</div>
+        <div class="edit-btns" style="margin-bottom:8px;">
+          <input type="text" class="edit-text" id="calUrl" readonly style="flex:1; margin:0; font-size:12px;" placeholder="주소를 불러오는 중…">
+          <button id="calCopyBtn" style="padding:0 14px; border:1px solid var(--border); background:#fff; border-radius:11px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px; white-space:nowrap;">복사</button>
+        </div>
+        <details style="font-size:12px; color:var(--sub); line-height:1.7;">
+          <summary style="cursor:pointer; font-weight:700; color:var(--text);">아이폰·맥에서 구독하는 방법</summary>
+          <b>아이폰</b>: 설정 → 앱 → 캘린더 → 캘린더 계정 → 계정 추가 → 기타 → <b>구독 캘린더 추가</b> → 주소 붙여넣기 → 다음 → 저장.<br>
+          같은 화면에서 방금 만든 구독을 열어 <b>알림 제거</b>가 꺼져 있는지 확인하세요. 홈 화면을 길게 눌러 <b>캘린더 위젯</b>을 추가하면 오늘 루틴이 시간순으로 보여요.<br>
+          <b>맥</b>: 캘린더 앱 → 파일 → 새로운 캘린더 구독 → 주소 붙여넣기 → 자동 새로 고침 "1시간".<br>
+          반복 업무를 바꾸면 다음 새로 고침 때 자동으로 반영돼요.
+        </details>
       </div>
     </div>
   </div>
@@ -1669,7 +1688,7 @@ function generateRecurring(){
         const ds=fmt(d);
         if(!data.tasks[ds]) data.tasks[ds]=[];
         if(!data.tasks[ds].some(t=>t.rid===r.id))
-          data.tasks[ds].push({id:uid(),text:r.text,priority:r.priority||'mid',category:r.category||'work',done:false,rid:r.id});
+          data.tasks[ds].push({id:uid(),text:(r.time?r.time+' ':'')+r.text,priority:r.priority||'mid',category:r.category||'work',done:false,rid:r.id});
       }
     }
     r.lastGen=fmt(end);
@@ -1681,6 +1700,7 @@ function describeRule(r){
   if(r.freq==='daily') s='매일';
   else if(r.freq==='weekly') s='매주 '+(r.weekdays||[]).slice().sort((a,b)=>a-b).map(i=>DAYS[i]).join('·');
   else s='매달 '+r.monthday+'일';
+  if(r.time) s+=' · ⏰ '+r.time+(r.alarm===false?'':' 📅');
   return (CAT[r.category]||CAT.work).icon+' '+s;
 }
 function renderRecurList(){
@@ -1699,6 +1719,7 @@ function updateRecurSub(){
 function openRecur(){
   rcCat='work'; rcPri='mid'; rcFreq='weekly'; rcWeekSet.clear(); rcMonthday=new Date().getDate();
   document.getElementById('rcText').value='';
+  document.getElementById('rcTime').value=''; document.getElementById('rcAlarm').checked=true;
   setPick('rcCat','c',rcCat); setPick('rcPri','p',rcPri);
   document.querySelectorAll('#rcFreq button').forEach(b=>b.classList.toggle('on',b.dataset.f===rcFreq));
   document.querySelectorAll('#rcWeekdays button').forEach(b=>b.classList.remove('on'));
@@ -1719,6 +1740,8 @@ document.getElementById('rcAdd').onclick=()=>{
   if(!text){alert('반복할 업무 내용을 입력하세요'); return;}
   if(rcFreq==='weekly'&&rcWeekSet.size===0){alert('요일을 하나 이상 선택하세요'); return;}
   const rule={id:'r'+uid(),text,category:rcCat,priority:rcPri,freq:rcFreq};
+  const time=document.getElementById('rcTime').value;
+  if(/^\d{2}:\d{2}$/.test(time)){rule.time=time; rule.alarm=document.getElementById('rcAlarm').checked;}
   if(rcFreq==='weekly') rule.weekdays=[...rcWeekSet];
   if(rcFreq==='monthly') rule.monthday=rcMonthday;
   data.recur.push(rule);
@@ -1744,10 +1767,54 @@ function scheduleSyncPush(){
   const c=syncCfg(); if(!syncReady||!c.token||!c.gist) return;
   clearTimeout(_syncTimer); _syncTimer=setTimeout(syncPush,1500);
 }
+/* ===== 캘린더 구독(.ics): 시간이 있는 반복 업무 → 아이폰·맥 캘린더 알림 ===== */
+function icsEscape(s){return String(s).replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');}
+function icsFold(line){ /* 한 줄 75옥텟 제한: 글자 단위로 접어 한글이 깨지지 않게 */
+  const enc=new TextEncoder(); let out='', cur='', bytes=0;
+  for(const ch of line){const b=enc.encode(ch).length; if(bytes+b>74){out+=cur+'\r\n '; cur=''; bytes=1;} cur+=ch; bytes+=b;}
+  return out+cur;
+}
+function icsDate(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
+function buildRoutineICS(){
+  const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
+  const BYDAY=['MO','TU','WE','TH','FR','SA','SU'];
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//weekly-planner//routines//KO','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'X-WR-CALNAME:루틴 (업무 플래너)','X-WR-CALDESC:주간 업무 플래너의 반복 업무 알림','REFRESH-INTERVAL;VALUE=DURATION:PT1H','X-PUBLISHED-TTL:PT1H'];
+  const today=new Date(); today.setHours(0,0,0,0);
+  (data.recur||[]).forEach(r=>{
+    if(!r.time||r.alarm===false) return;
+    const m=String(r.time).match(/^(\d{1,2}):(\d{2})$/); if(!m) return;
+    if(r.freq==='weekly'&&!(r.weekdays||[]).length) return;
+    const hh=m[1].padStart(2,'0'), mm=m[2];
+    let first=null; for(let i=0;i<62;i++){const d=addDays(today,i); if(matchRule(r,d)){first=d; break;}} /* DTSTART는 실제 발생일이어야 함 */
+    if(!first) return;
+    let rrule;
+    if(r.freq==='daily') rrule='FREQ=DAILY';
+    else if(r.freq==='weekly') rrule='FREQ=WEEKLY;BYDAY='+(r.weekdays||[]).slice().sort((a,b)=>a-b).map(i=>BYDAY[i]).join(',');
+    else rrule='FREQ=MONTHLY;BYMONTHDAY='+r.monthday;
+    const title=icsEscape(r.text);
+    lines.push('BEGIN:VEVENT','UID:'+r.id+'@weekly-planner','DTSTAMP:'+stamp,'DTSTART:'+icsDate(first)+'T'+hh+mm+'00','DURATION:PT15M','RRULE:'+rrule,
+      'SUMMARY:'+title,'DESCRIPTION:'+icsEscape(describeRule(r)),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+title,'TRIGGER:PT0S','END:VALARM','END:VEVENT');
+  });
+  lines.push('END:VCALENDAR');
+  return lines.map(icsFold).join('\r\n')+'\r\n';
+}
+function syncFiles(){return {'weekly-planner.json':{content:JSON.stringify(data)},'routines.ics':{content:buildRoutineICS()}};}
+async function calendarUrl(){
+  const c=syncCfg(); if(!c.token||!c.gist) return '';
+  let owner=''; try{owner=localStorage.getItem('wp_sync_owner')||'';}catch(e){}
+  if(!owner){
+    try{const r=await fetch('https://api.github.com/gists/'+c.gist,{headers:ghHeaders(c.token)});
+      if(r.ok){const j=await r.json(); owner=(j.owner&&j.owner.login)||''; if(owner){try{localStorage.setItem('wp_sync_owner',owner);}catch(e){}}}
+    }catch(e){}
+  }
+  return owner?'https://gist.githubusercontent.com/'+owner+'/'+c.gist+'/raw/routines.ics':'';
+}
+async function refreshCalUrl(){const el=document.getElementById('calUrl'); if(!el) return; el.value=''; const u=await calendarUrl(); el.value=u||'주소를 가져오지 못했어요 (연결 상태를 확인하세요)';}
 async function syncPush(){
   const c=syncCfg(); if(!c.token||!c.gist) return;
   try{
-    const r=await fetch('https://api.github.com/gists/'+c.gist,{method:'PATCH',headers:ghHeaders(c.token),body:JSON.stringify({files:{'weekly-planner.json':{content:JSON.stringify(data)}}})});
+    const r=await fetch('https://api.github.com/gists/'+c.gist,{method:'PATCH',headers:ghHeaders(c.token),body:JSON.stringify({files:syncFiles()})});
     syncStatus(r.ok?('✅ 연결됨 · 마지막 저장 '+fmtClock(new Date())):('⚠️ 업로드 실패 ('+r.status+')'));
   }catch(e){syncStatus('⚠️ 네트워크 오류 (오프라인?)');}
 }
@@ -1768,12 +1835,12 @@ async function syncConnect(token){
     if(!r.ok){syncStatus(r.status===401?'⚠️ 토큰이 올바르지 않아요':'⚠️ 연결 실패 ('+r.status+')'); return;}
     const list=await r.json(); const found=list.find(g=>g.files&&g.files['weekly-planner.json']);
     if(found){
-      localStorage.setItem('wp_sync_token',token); localStorage.setItem('wp_sync_gist',found.id);
+      localStorage.setItem('wp_sync_token',token); localStorage.setItem('wp_sync_gist',found.id); if(found.owner&&found.owner.login) localStorage.setItem('wp_sync_owner',found.owner.login);
       await syncPull();
     }else{
-      const cr=await fetch('https://api.github.com/gists',{method:'POST',headers:ghHeaders(token),body:JSON.stringify({description:'weekly-planner-sync',public:false,files:{'weekly-planner.json':{content:JSON.stringify(data)}}})});
+      const cr=await fetch('https://api.github.com/gists',{method:'POST',headers:ghHeaders(token),body:JSON.stringify({description:'weekly-planner-sync',public:false,files:syncFiles()})});
       if(!cr.ok){syncStatus('⚠️ 저장소 생성 실패 ('+cr.status+')'); return;}
-      const cj=await cr.json(); localStorage.setItem('wp_sync_token',token); localStorage.setItem('wp_sync_gist',cj.id);
+      const cj=await cr.json(); localStorage.setItem('wp_sync_token',token); localStorage.setItem('wp_sync_gist',cj.id); if(cj.owner&&cj.owner.login) localStorage.setItem('wp_sync_owner',cj.owner.login);
       syncStatus('✅ 새 저장소를 만들었어요 · '+fmtClock(new Date()));
     }
     syncReady=true; updateSyncUI();
@@ -1785,7 +1852,13 @@ function updateSyncUI(){
   document.getElementById('syncConnected').classList.toggle('hidden',!connected);
   if(!connected) syncStatus('아직 연결되지 않았어요. 아래에 토큰을 넣고 연결하세요.');
   else if(!document.getElementById('syncStatus').innerHTML) syncStatus('✅ 연결됨');
+  if(connected) refreshCalUrl();
 }
+document.getElementById('calCopyBtn').onclick=async()=>{
+  const el=document.getElementById('calUrl'); const u=el.value; if(!u.startsWith('http')){alert('아직 주소가 없어요'); return;}
+  try{await navigator.clipboard.writeText(u);}catch(e){el.select(); try{document.execCommand('copy');}catch(_){}}
+  if(typeof toast==='function') toast('📅 캘린더 주소를 복사했어요'); else alert('복사했어요');
+};
 document.getElementById('syncBtn').onclick=()=>{updateSyncUI(); document.getElementById('syncOverlay').classList.add('show');};
 document.getElementById('syncClose').onclick=()=>document.getElementById('syncOverlay').classList.remove('show');
 document.getElementById('syncOverlay').onclick=e=>{if(e.target.id==='syncOverlay')e.currentTarget.classList.remove('show');};
@@ -1793,7 +1866,7 @@ document.getElementById('syncConnectBtn').onclick=()=>{const tk=document.getElem
 document.getElementById('syncNowBtn').onclick=async()=>{await syncPull(); await syncPush();};
 document.getElementById('syncPullBtn').onclick=()=>syncPull();
 document.getElementById('syncPushBtn').onclick=()=>syncPush();
-document.getElementById('syncDisconnectBtn').onclick=()=>{localStorage.removeItem('wp_sync_token'); localStorage.removeItem('wp_sync_gist'); syncReady=false; updateSyncUI();};
+document.getElementById('syncDisconnectBtn').onclick=()=>{localStorage.removeItem('wp_sync_token'); localStorage.removeItem('wp_sync_gist'); localStorage.removeItem('wp_sync_owner'); syncReady=false; updateSyncUI();};
 
 /* ===== 대한민국 공휴일 (공공데이터포털 특일 정보 API) ===== */
 if(!data.holidays||typeof data.holidays!=='object'||Array.isArray(data.holidays)) data.holidays={};
