@@ -1,0 +1,6 @@
+# macOS
+.DS_Store
+
+# 맥 앱 빌드 산출물
+mac/dist/
+*.dmg
