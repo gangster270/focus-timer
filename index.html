@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>주간 플래너 & 포커스 타이머</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='88'>🌱</text></svg>">
-<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23EFF5FF'/><text y='.92em' x='10' font-size='72'>🌱</text></svg>">
+<link rel="apple-touch-icon" sizes="180x180" href="icon-180.png">
+<link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1001,7 +1002,9 @@ let curMonday=getMonday(new Date());
 let curMonth=new Date(); curMonth.setDate(1); curMonth.setHours(0,0,0,0);
 let filterCat='all'; const addCat={};
 let currentView='week';
-let widgetMode=false; try{widgetMode=localStorage.getItem('wp_widget')==='1';}catch(e){}
+/* 위젯(모바일) 모드: 저장된 설정이 없으면 휴대폰 크기 화면에서 자동으로 켠다 */
+const isPhoneScreen=Math.min(screen.width,screen.height)<600; /* innerWidth는 자동 축소 시 커지므로 화면 크기로 판단 */
+let widgetMode=false; try{const w=localStorage.getItem('wp_widget'); widgetMode=(w===null)?isPhoneScreen:(w==='1');}catch(e){widgetMode=isPhoneScreen;}
 let widgetRange='week'; try{const r=localStorage.getItem('wp_wrange'); if(r==='week'||r==='3day')widgetRange=r;}catch(e){}
 
 /* ===== D-day ===== */
