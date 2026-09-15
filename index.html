@@ -935,7 +935,25 @@
 <script>
 /* ===== 저장 ===== */
 const KEY='weeklyPlanner_v1'; let mem=null;
-function load(){try{const r=localStorage.getItem(KEY); if(r) return JSON.parse(r);}catch(e){} if(mem) return mem; return {tasks:{},logs:{}};}
+/* 다른 기기·다른 버전에서 온 데이터라도 화면이 멈추지 않도록 형태를 맞춘다 */
+function normalizeData(d){
+  if(!d||typeof d!=='object'||Array.isArray(d)) d={};
+  if(!d.tasks||typeof d.tasks!=='object'||Array.isArray(d.tasks)) d.tasks={};
+  if(!d.logs||typeof d.logs!=='object'||Array.isArray(d.logs)) d.logs={};
+  for(const ds in d.tasks){
+    if(!Array.isArray(d.tasks[ds])){delete d.tasks[ds]; continue;}
+    d.tasks[ds]=d.tasks[ds].filter(t=>t&&typeof t==='object');
+    d.tasks[ds].forEach(t=>{
+      if(!t.id) t.id=uid();
+      if(typeof t.text!=='string') t.text=t.text==null?'':String(t.text);
+      if(t.project!=null&&typeof t.project!=='string') t.project=String(t.project);
+      if(t.due!=null&&typeof t.due!=='string') delete t.due;
+      if(t.subs!=null&&!Array.isArray(t.subs)) delete t.subs;
+    });
+  }
+  return d;
+}
+function load(){try{const r=localStorage.getItem(KEY); if(r) return normalizeData(JSON.parse(r));}catch(e){} if(mem) return mem; return {tasks:{},logs:{}};}
 function save(){try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){mem=data;} if(typeof scheduleSyncPush==='function') scheduleSyncPush();}
 let data=load();
 
@@ -949,7 +967,7 @@ const BAR_COLORS=[
   '#40C057','#66A80F','#E67700','#F76707','#D9480F','#C92A2A','#FF6B6B','#E64980',
   '#9C36B5','#7048E8','#8D6E63','#495057'];
 /* 프로젝트 자동 색은 기존 8색 기준 유지 (팔레트를 늘려도 기존 프로젝트 색이 안 바뀌게) */
-function projColor(name){let h=0; for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0; return BAR_COLORS[h%8];}
+function projColor(name){name=String(name||''); let h=0; for(let i=0;i<name.length;i++)h=(h*31+name.charCodeAt(i))>>>0; return BAR_COLORS[h%8];}
 function barColor(t){return t.color||(t.project?projColor(t.project):'#3182F6');}
 
 /* ===== 날짜 ===== */
@@ -971,7 +989,7 @@ function ddayInfo(due){const n=dday(due); if(n<0) return {n,label:'D+'+(-n),cls:
 
 /* ===== 할일 ===== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
-function getTasks(ds){return (data.tasks[ds]||[]).map(t=>({category:'work',...t}));}
+function getTasks(ds){const a=data.tasks[ds]; if(!Array.isArray(a)) return []; return a.map(t=>({...t,category:CAT[t.category]?t.category:'work'}));}
 function rawTasks(ds){return data.tasks[ds]||[];}
 function parseTime(text){
   const s=(text||'').trim();
@@ -1037,7 +1055,7 @@ function moveTaskByDays(srcDs,id,days){
 }
 
 /* ===== 렌더 ===== */
-function esc(s){return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function splitTime(text){
   const s=text||'';
   let m=s.match(/^(\d{1,2}):(\d{2})([\s\S]*)$/);
@@ -1061,7 +1079,7 @@ function taskHTML(t,ds,drag){
       ${(t.project||di||schip)?`<div class="tmeta">${t.project?`<span class="prj-chip" style="background:${projColor(t.project)}22;color:${projColor(t.project)}">${esc(t.project)}</span>`:''}${di?`<span class="dchip ${di.cls}">${di.label}</span>`:''}${schip}</div>`:''}
       ${subs.length?`<div class="subs">${subs.map(s=>`<div class="sub ${s.done?'done':''}" data-act="sub" data-sub="${s.id}"><span class="scheck"></span><span class="stxt">${esc(s.text)}</span></div>`).join('')}</div>`:''}
     </div>
-    <div class="cat-icon" data-act="cat" title="업무/개인 전환">${CAT[c].icon}</div>
+    <div class="cat-icon" data-act="cat" title="업무/개인 전환">${(CAT[c]||CAT.work).icon}</div>
     <div class="del" data-act="menu" title="더보기 (수정·타이머·색·삭제)">⋯</div>
   </div>`;
 }
@@ -1088,7 +1106,17 @@ function renderWeek(){
   let total=0,done=0,ph=0,pm=0,pl=0,cw=0,cp=0,over=0,soon=0;
   const grid=document.getElementById('weekGrid'); grid.innerHTML='';
   dates.forEach((d,i)=>{
-    const ds=fmt(d); const vt=visible(ds); const all=getTasks(ds);
+    const ds=fmt(d);
+    try{ renderDayCol(d,i,ds); }
+    catch(err){ /* 하루가 깨져도 나머지 요일은 계속 그린다 */
+      console.error('요일 렌더링 실패',ds,err);
+      const col=document.createElement('div'); col.className='day-col'; col.dataset.ds=ds;
+      col.innerHTML=`<div class="day-head"><div class="day-name">${DAYS[i]}<span class="date">${d.getMonth()+1}/${d.getDate()}</span></div></div><div class="task-list" data-ds="${ds}"><div class="empty" style="color:var(--high)">⚠️ 이 날 데이터를 표시할 수 없어요</div></div>`;
+      grid.appendChild(col);
+    }
+  });
+  function renderDayCol(d,i,ds){
+    const vt=visible(ds); const all=getTasks(ds);
     const dDone=vt.filter(t=>t.done).length;
     total+=vt.length; done+=dDone;
     vt.forEach(t=>{if(!t.done){if(t.priority==='high')ph++;else if(t.priority==='mid')pm++;else pl++;
@@ -1110,13 +1138,13 @@ function renderWeek(){
       <div class="task-list" data-ds="${ds}">${renderTaskList(vt,ds,true)}</div>
       <div class="add-row">
         <div class="add-line">
-          <button class="cat-sw" data-ds="${ds}" data-cat="${ac}" title="분류 전환">${CAT[ac].icon}</button>
+          <button class="cat-sw" data-ds="${ds}" data-cat="${ac}" title="분류 전환">${(CAT[ac]||CAT.work).icon}</button>
           <input class="add-input" data-ds="${ds}" placeholder="+ 할일 추가 (~8/15 #프로젝트 !)" title="~8/15 = 기한 · #이름 = 프로젝트 · ! = 높은 우선순위">
         </div>
         <button class="log-btn ${hasLog?'has':''}" data-log="${ds}">📝 업무 기록${hasLog?' ●':''}</button>
       </div>`;
     grid.appendChild(col);
-  });
+  }
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('sTotal').textContent=total;
   document.getElementById('sDone').textContent=done;
@@ -1331,7 +1359,11 @@ function confirmBox(title,msg,onOk){
   const ov=document.getElementById('confirmOverlay'); ov.classList.add('show'); const close=()=>ov.classList.remove('show');
   document.getElementById('cfOk').onclick=()=>{close(); onOk();}; document.getElementById('cfCancel').onclick=close;
 }
-function renderAll(){renderWeek(); renderMonth(); renderWidget(); if(modalDS)renderModalTasks(); updatePrjDatalist(); if(document.getElementById('prjOverlay').classList.contains('show'))renderProjects();}
+function renderAll(){
+  /* 한 화면이 실패해도 다른 화면은 그려지도록 각각 보호 */
+  const steps=[renderWeek,renderMonth,renderWidget,()=>{if(modalDS)renderModalTasks();},updatePrjDatalist,()=>{if(document.getElementById('prjOverlay').classList.contains('show'))renderProjects();}];
+  steps.forEach(fn=>{try{fn();}catch(err){console.error('렌더링 실패',fn.name,err);}});
+}
 
 /* ===== 이벤트 ===== */
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
@@ -1537,7 +1569,7 @@ document.getElementById('prjBody').addEventListener('click',taskClick);
 document.getElementById('exportBtn').onclick=()=>{const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`업무플래너_${todayStr}.json`; a.click();};
 document.getElementById('importBtn').onclick=()=>document.getElementById('importFile').click();
 document.getElementById('importFile').onchange=e=>{const f=e.target.files[0]; if(!f)return; const r=new FileReader();
-  r.onload=()=>{try{const j=JSON.parse(r.result); if(j.tasks){data=j; save(); renderAll(); renderMemo();} else alert('형식이 올바르지 않아요');}catch(err){alert('파일을 읽을 수 없어요');}};
+  r.onload=()=>{try{const j=JSON.parse(r.result); if(j.tasks){data=normalizeData(j); save(); renderAll(); renderMemo();} else alert('형식이 올바르지 않아요');}catch(err){alert('파일을 읽을 수 없어요');}};
   r.readAsText(f);};
 
 /* ===== 드롭존(주 이동) ===== */
@@ -1625,7 +1657,7 @@ function describeRule(r){
   if(r.freq==='daily') s='매일';
   else if(r.freq==='weekly') s='매주 '+(r.weekdays||[]).slice().sort((a,b)=>a-b).map(i=>DAYS[i]).join('·');
   else s='매달 '+r.monthday+'일';
-  return CAT[r.category||'work'].icon+' '+s;
+  return (CAT[r.category]||CAT.work).icon+' '+s;
 }
 function renderRecurList(){
   const box=document.getElementById('rcList');
@@ -1701,7 +1733,7 @@ async function syncPull(){
     const r=await fetch('https://api.github.com/gists/'+c.gist,{headers:ghHeaders(c.token)});
     if(!r.ok){syncStatus('⚠️ 내려받기 실패 ('+r.status+')'); return false;}
     const j=await r.json(); const f=j.files&&j.files['weekly-planner.json'];
-    if(f&&f.content){const p=JSON.parse(f.content); if(p&&p.tasks){data=p; if(!Array.isArray(data.memoNotes))data.memoNotes=[]; if(!Array.isArray(data.recur))data.recur=[]; if(!data.holidays||typeof data.holidays!=='object'||Array.isArray(data.holidays))data.holidays={}; save(); renderAll(); renderMemo(); syncStatus('✅ 연결됨 · 마지막 동기화 '+fmtClock(new Date()));}}
+    if(f&&f.content){const p=JSON.parse(f.content); if(p&&p.tasks){data=normalizeData(p); if(!Array.isArray(data.memoNotes))data.memoNotes=[]; if(!Array.isArray(data.recur))data.recur=[]; if(!data.holidays||typeof data.holidays!=='object'||Array.isArray(data.holidays))data.holidays={}; save(); renderAll(); renderMemo(); syncStatus('✅ 연결됨 · 마지막 동기화 '+fmtClock(new Date()));}}
     return true;
   }catch(e){syncStatus('⚠️ 네트워크 오류'); return false;}
 }
@@ -1741,7 +1773,7 @@ document.getElementById('syncDisconnectBtn').onclick=()=>{localStorage.removeIte
 
 /* ===== 대한민국 공휴일 (공공데이터포털 특일 정보 API) ===== */
 if(!data.holidays||typeof data.holidays!=='object'||Array.isArray(data.holidays)) data.holidays={};
-function holidayName(ds){return (data.holidays||{})[ds]||null;}
+function holidayName(ds){const h=(data.holidays||{})[ds]; if(!h) return null; if(typeof h==='string') return h; if(typeof h==='object') return String(h.name||h.title||h.dateName||''); return String(h);}
 function holApiKey(){try{return localStorage.getItem('wp_hol_key')||'';}catch(e){return '';}}
 let _holFetched={}; try{_holFetched=JSON.parse(localStorage.getItem('wp_hol_fetched')||'{}');}catch(e){}
 const _holTried={}; /* 세션 중 실패한 연도 재시도 방지 */
