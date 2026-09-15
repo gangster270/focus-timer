@@ -953,8 +953,29 @@ function normalizeData(d){
   }
   return d;
 }
-function load(){try{const r=localStorage.getItem(KEY); if(r) return normalizeData(JSON.parse(r));}catch(e){} if(mem) return mem; return {tasks:{},logs:{}};}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(data));}catch(e){mem=data;} if(typeof scheduleSyncPush==='function') scheduleSyncPush();}
+/* 네이티브 셸(맥 앱 WKWebView·Electron)이 있으면 데이터를 파일에도 저장한다 */
+const NATIVE_SAVE=(()=>{try{return (window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.save)||null;}catch(e){return null;}})();
+function b64ToStr(b64){return new TextDecoder().decode(Uint8Array.from(atob(b64),c=>c.charCodeAt(0)));}
+function load(){
+  if(window.__INITIAL_DATA_B64__){ /* 셸이 파일에서 읽어 넘겨준 데이터가 우선 */
+    try{const s=b64ToStr(window.__INITIAL_DATA_B64__); if(s&&s!=='null'){const d=normalizeData(JSON.parse(s)); try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){} return d;}}catch(e){}
+  }
+  try{const r=localStorage.getItem(KEY); if(r) return normalizeData(JSON.parse(r));}catch(e){} if(mem) return mem; return {tasks:{},logs:{}};}
+function save(){
+  const s=JSON.stringify(data);
+  try{localStorage.setItem(KEY,s);}catch(e){mem=data;}
+  if(NATIVE_SAVE){try{NATIVE_SAVE.postMessage(s);}catch(e){}}
+  if(typeof scheduleSyncPush==='function') scheduleSyncPush();
+}
+/* 셸이 파일 변경(다른 기기 등)을 감지해 넘겨줄 때 */
+window.__applyExternalData=function(b64){
+  try{const p=JSON.parse(b64ToStr(b64)); if(!p||!p.tasks) return;
+    data=normalizeData(p);
+    if(!Array.isArray(data.memoNotes))data.memoNotes=[]; if(!Array.isArray(data.recur))data.recur=[];
+    if(!data.holidays||typeof data.holidays!=='object'||Array.isArray(data.holidays))data.holidays={};
+    renderAll(); if(typeof renderMemo==='function')renderMemo();
+  }catch(e){console.error('외부 데이터 적용 실패',e);}
+};
 let data=load();
 
 /* ===== 메타 ===== */
