@@ -1137,6 +1137,8 @@ function normalizeData(d){
   if(!d.tasks||typeof d.tasks!=='object'||Array.isArray(d.tasks)) d.tasks={};
   if(!d.logs||typeof d.logs!=='object'||Array.isArray(d.logs)) d.logs={};
   if(!Array.isArray(d.projects)) d.projects=[];
+  if(!Array.isArray(d.recur)) d.recur=[];
+  d.recur=d.recur.filter(r=>r&&typeof r==='object'); d.recur.forEach(normalizeRule);
   for(const ds in d.tasks){
     if(!Array.isArray(d.tasks[ds])){delete d.tasks[ds]; continue;}
     d.tasks[ds]=d.tasks[ds].filter(t=>t&&typeof t==='object');
@@ -2561,19 +2563,28 @@ function generateRecurring(){
         const ds=fmt(d);
         if(!data.tasks[ds]) data.tasks[ds]=[];
         if(!data.tasks[ds].some(t=>t.rid===r.id))
-          {const nt={id:uid(),text:r.text,priority:r.priority||'mid',category:r.category||'work',done:false,rid:r.id}; if(r.time) nt.at=r.time; data.tasks[ds].push(nt);} /* 시간은 at 필드로 (하루 시간표와 연동) */
+          {const nt={id:uid(),text:r.text,priority:r.priority||'mid',category:r.category||'work',done:false,rid:r.id}; if(r.time){nt.at=r.time; if(r.end) nt.end=r.end;} data.tasks[ds].push(nt);} /* 시간은 at/end 필드로 (하루 시간표와 연동) */
       }
     }
     r.lastGen=fmt(end);
   });
   save();
 }
+/* 제목 앞에 적은 시간("22:30 샤워하기", "09:00-09:30 메일")을 시간 필드로 옮긴다 → 캘린더 알림·하루 시간표 연동 */
+function normalizeRule(r){
+  if(typeof r.text!=='string') r.text=r.text==null?'':String(r.text);
+  if(!r.time){
+    const pt=pullTime(r.text);
+    if(pt&&pt.at){r.time=pt.at; if(pt.end) r.end=pt.end; if(pt.rest) r.text=pt.rest; if(r.alarm==null) r.alarm=true;}
+  }
+  return r;
+}
 function describeRule(r){
   let s;
   if(r.freq==='daily') s='매일';
   else if(r.freq==='weekly') s='매주 '+(r.weekdays||[]).slice().sort((a,b)=>a-b).map(i=>DAYS[i]).join('·');
   else s='매달 '+r.monthday+'일';
-  if(r.time) s+=' · ⏰ '+r.time+(r.alarm===false?'':' 📅');
+  if(r.time) s+=' · ⏰ '+r.time+(r.end?'~'+r.end:'')+(r.alarm===false?'':' 📅');
   return (CAT[r.category]||CAT.work).icon+' '+s;
 }
 function renderRecurList(){
@@ -2615,6 +2626,8 @@ document.getElementById('rcAdd').onclick=()=>{
   const rule={id:'r'+uid(),text,category:rcCat,priority:rcPri,freq:rcFreq};
   const time=document.getElementById('rcTime').value;
   if(/^\d{2}:\d{2}$/.test(time)){rule.time=time; rule.alarm=document.getElementById('rcAlarm').checked;}
+  normalizeRule(rule); /* 제목에 "22:30 …" 처럼 적어도 시간으로 인식 */
+  if(rule.time&&!/^\d{2}:\d{2}$/.test(time)) rule.alarm=document.getElementById('rcAlarm').checked;
   if(rcFreq==='weekly') rule.weekdays=[...rcWeekSet];
   if(rcFreq==='monthly') rule.monthday=rcMonthday;
   data.recur.push(rule);
@@ -2666,7 +2679,8 @@ function buildRoutineICS(){
     else if(r.freq==='weekly') rrule='FREQ=WEEKLY;BYDAY='+(r.weekdays||[]).slice().sort((a,b)=>a-b).map(i=>BYDAY[i]).join(',');
     else rrule='FREQ=MONTHLY;BYMONTHDAY='+r.monthday;
     const title=icsEscape(r.text);
-    lines.push('BEGIN:VEVENT','UID:'+r.id+'@weekly-planner','DTSTAMP:'+stamp,'DTSTART:'+icsDate(first)+'T'+hh+mm+'00','DURATION:PT15M','RRULE:'+rrule,
+    let dur=15; const en=r.end?hm2min(r.end):null; if(en!=null){dur=en-(+m[1]*60+ +m[2]); if(dur<=0) dur+=1440;}
+    lines.push('BEGIN:VEVENT','UID:'+r.id+'@weekly-planner','DTSTAMP:'+stamp,'DTSTART:'+icsDate(first)+'T'+hh+mm+'00','DURATION:PT'+dur+'M','RRULE:'+rrule,
       'SUMMARY:'+title,'DESCRIPTION:'+icsEscape(describeRule(r)),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+title,'TRIGGER:PT0S','END:VALARM','END:VEVENT');
   });
   lines.push('END:VCALENDAR');
