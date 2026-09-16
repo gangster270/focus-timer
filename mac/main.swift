@@ -19,6 +19,7 @@ let bridgeJS = """
   window.electronAPI = {
     setAlwaysOnTop: async function (on) { post('ui', { type: 'alwaysOnTop', on: !!on }); },
     setMiniMode: async function (on, pinned) { post('ui', { type: 'miniMode', on: !!on, pinned: !!pinned }); },
+    flashFrame: async function () { post('ui', { type: 'flash' }); },
     fetchHolidays: async function (key, year) {
       try {
         var k = key.indexOf('%') >= 0 ? key : encodeURIComponent(key);
@@ -177,6 +178,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate,
             } else if type == "miniMode" {
                 pinned = obj["pinned"] as? Bool ?? pinned
                 setMini(on)
+            } else if type == "flash" {
+                // 타이머 종료 등: Dock 아이콘 튀기기 + 소리
+                NSApp.requestUserAttention(.criticalRequest)
+                NSSound(named: "Glass")?.play()
             }
         default:
             break
