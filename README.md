@@ -27,10 +27,14 @@ cd focus-timer/mac
 open "dist/주간 업무 플래너.app"
 ```
 
-`./build.sh --latest` 로 실행하면 저장소를 다시 받지 않고 GitHub `main` 의 최신 `index.html` 을 내려받아 빌드합니다.
+평소 업데이트는 이 한 줄이면 됩니다 — GitHub `main` 의 최신 `index.html` 로 빌드해서 `/Applications` 에 설치하고, 빌드 사본은 지워 앱이 두 개로 보이지 않게 합니다:
 
-빌드된 앱을 `/Applications` 로 옮기거나, `dist/WeeklyPlanner.dmg` 를 열어 Applications 에 드래그하면 됩니다.
-직접 빌드한 앱이라 Gatekeeper 경고 없이 바로 실행돼요.
+```zsh
+cd ~/focus-timer/mac && ./build.sh --latest --install
+```
+
+옵션: `--latest` 는 저장소를 다시 받지 않고 최신 파일을 내려받아 빌드, `--install` 은 `/Applications` 에 설치.
+`dist/WeeklyPlanner.dmg` 는 다른 맥에 옮길 때만 필요해요. 직접 빌드한 앱이라 Gatekeeper 경고 없이 바로 실행돼요.
 
 ### 앱에서 되는 것
 

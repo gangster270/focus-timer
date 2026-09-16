@@ -1,8 +1,10 @@
 #!/bin/zsh
 # 주간 업무 플래너 맥 앱 빌드: .app 번들 + .dmg 생성
 #
-#   ./build.sh            저장소의 index.html 로 빌드
-#   ./build.sh --latest   GitHub main 의 최신 index.html 을 받아서 빌드
+#   ./build.sh                     저장소의 index.html 로 빌드
+#   ./build.sh --latest            GitHub main 의 최신 index.html 을 받아서 빌드
+#   ./build.sh --latest --install  빌드 후 /Applications 에 설치하고 빌드 사본은 지움
+#                                  (앱이 두 개로 보이지 않게)
 #
 # 필요한 것: Xcode 또는 Command Line Tools (xcode-select --install)
 set -e
@@ -11,8 +13,16 @@ cd "$(dirname "$0")"
 OUT=dist
 APP="$OUT/주간 업무 플래너.app"
 HTML=../index.html
+LATEST=0; INSTALL=0
+for a in "$@"; do
+  case "$a" in
+    --latest)  LATEST=1 ;;
+    --install) INSTALL=1 ;;
+    *) echo "알 수 없는 옵션: $a"; exit 1 ;;
+  esac
+done
 
-if [[ "$1" == "--latest" ]]; then
+if [[ $LATEST == 1 ]]; then
   echo "── 0. GitHub 에서 최신 index.html 내려받기"
   HTML="$OUT/index.html"
   mkdir -p "$OUT"
@@ -59,8 +69,23 @@ rm -f "$OUT/WeeklyPlanner.dmg"
 hdiutil create -volname "주간 업무 플래너" -srcfolder "$STAGE" -ov -format UDZO "$OUT/WeeklyPlanner.dmg" >/dev/null
 rm -rf "$STAGE"
 
-echo
-echo "완료!"
-echo "  앱:  $APP"
-echo "  DMG: $OUT/WeeklyPlanner.dmg"
-echo "바로 실행하려면:  open \"$APP\""
+if [[ $INSTALL == 1 ]]; then
+  echo "── 6. /Applications 에 설치"
+  DEST="/Applications/주간 업무 플래너.app"
+  osascript -e 'quit app "주간 업무 플래너"' 2>/dev/null || true
+  rm -rf "$DEST"
+  cp -R "$APP" "$DEST"
+  rm -rf "$APP"          # 빌드 사본을 남기면 Spotlight·Launchpad 에 앱이 두 개로 보임
+  hdiutil detach "/Volumes/주간 업무 플래너" 2>/dev/null || true
+  echo
+  echo "완료! 설치됨: $DEST"
+  echo "  DMG: $OUT/WeeklyPlanner.dmg (다른 맥에 옮길 때만 필요)"
+  open "$DEST"
+else
+  echo
+  echo "완료!"
+  echo "  앱:  $APP"
+  echo "  DMG: $OUT/WeeklyPlanner.dmg"
+  echo "바로 실행하려면:  open \"$APP\""
+  echo "/Applications 에 설치하려면:  ./build.sh --install"
+fi
