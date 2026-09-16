@@ -1037,7 +1037,7 @@
           <button id="syncDisconnectBtn" style="flex:1; padding:11px; border:1px solid var(--border); background:#fff; color:var(--high); border-radius:11px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px;">연결 해제</button>
         </div>
         <div class="sec-label" style="margin-top:20px;">📅 아이폰·맥 캘린더 알림</div>
-        <div style="font-size:12px; color:var(--sub); line-height:1.6; margin-bottom:8px;">시간이 있는 🔁 반복 업무가 캘린더 구독 파일로 함께 올라가요. 아래 주소를 캘린더에 한 번 구독하면 그 시간에 기본 알림이 울리고, 캘린더 위젯에도 오늘 루틴이 보여요.</div>
+        <div style="font-size:12px; color:var(--sub); line-height:1.6; margin-bottom:8px;">완료되지 않은 모든 할일과 루틴이 캘린더 구독 파일로 함께 올라가요. 아래 주소를 캘린더에 한 번 구독하면 시간 있는 항목은 그 시간에 기본 알림이 울리고, 캘린더 위젯에 오늘 할일이 보여요. 완료하면 캘린더에서도 사라져요.</div>
         <div class="edit-btns" style="margin-bottom:8px;">
           <input type="text" class="edit-text" id="calUrl" readonly style="flex:1; margin:0; font-size:12px;" placeholder="주소를 불러오는 중…">
           <button id="calCopyBtn" style="padding:0 14px; border:1px solid var(--border); background:#fff; border-radius:11px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px; white-space:nowrap;">복사</button>
@@ -1218,7 +1218,8 @@ function parseTime(text){
   const s=(text||'').trim();
   let m=s.match(/^(\d{1,2}):(\d{2})\b/);
   if(m){const h=+m[1],mi=+m[2]; if(h<24&&mi<60) return h*60+mi;}
-  m=s.match(/^(오전|오후)?\s*(\d{1,2})\s*시\s*(?:(\d{1,2})\s*분)?/);
+  /* "3시간 걸리는 일"을 3시로 오인하지 않도록 시(분) 뒤에는 공백이나 끝이 와야 함 (pullTime 과 같은 규칙) */
+  m=s.match(/^(오전|오후)?\s*(\d{1,2})\s*시(?:\s*(\d{1,2})\s*분)?(?=\s|$)/);
   if(m){let h=+m[2]; const mi=m[3]?+m[3]:0; if(m[1]==='오후'&&h<12)h+=12; if(m[1]==='오전'&&h===12)h=0; if(h<24&&mi<60) return h*60+mi;}
   return null;
 }
@@ -1356,7 +1357,7 @@ function splitTime(text){
   const s=text||'';
   let m=s.match(/^(\d{1,2}):(\d{2})([\s\S]*)$/);
   if(m){const h=+m[1],mi=+m[2]; if(h<24&&mi<60) return {t:m[1]+':'+m[2], rest:m[3].replace(/^\s+/,'')};}
-  m=s.match(/^((?:오전|오후)?\s*\d{1,2}\s*시(?:\s*\d{1,2}\s*분)?)([\s\S]*)$/);
+  m=s.match(/^((?:오전|오후)?\s*\d{1,2}\s*시(?:\s*\d{1,2}\s*분)?)(?=\s|$)([\s\S]*)$/);
   if(m) return {t:m[1].trim(), rest:m[2].replace(/^\s+/,'')};
   return null;
 }
@@ -2563,7 +2564,7 @@ function generateRecurring(){
         const ds=fmt(d);
         if(!data.tasks[ds]) data.tasks[ds]=[];
         if(!data.tasks[ds].some(t=>t.rid===r.id))
-          {const nt={id:uid(),text:r.text,priority:r.priority||'mid',category:r.category||'work',done:false,rid:r.id}; if(r.time){nt.at=r.time; if(r.end) nt.end=r.end;} data.tasks[ds].push(nt);} /* 시간은 at/end 필드로 (하루 시간표와 연동) */
+          {const nt={id:uid(),text:r.text,priority:r.priority||'mid',category:r.category||'work',done:false,rid:r.id}; if(r.time){nt.at=r.time; if(r.end) nt.end=r.end; if(r.alarm===false) nt.alarm=false;} data.tasks[ds].push(nt);} /* 시간은 at/end 필드로 (하루 시간표와 연동) */
       }
     }
     r.lastGen=fmt(end);
@@ -2661,27 +2662,40 @@ function icsFold(line){ /* 한 줄 75옥텟 제한: 글자 단위로 접어 한�
   return out+cur;
 }
 function icsDate(d){return d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');}
+/* 캘린더에 올릴 항목: 완료되지 않은 모든 할일(오늘부터), 기한이 있는 할일은 기한 날짜에 마감 표시 */
+function calendarItems(){
+  const items=[]; const today=todayStr; const limit=fmt(addDays(new Date(),120));
+  for(const ds in data.tasks){
+    if(!Array.isArray(data.tasks[ds])) continue;
+    for(const t of data.tasks[ds]){
+      if(!t||t.done) continue;
+      const text=taskBody(t)||t.text||''; if(!text.trim()) continue;
+      const desc=[(CAT[t.category]||CAT.work).label, t.project?'#'+t.project:'', t.priority==='high'?'🔴 높음':'', t.due?'기한 '+t.due:'']
+        .filter(Boolean).join(' · ');
+      if(ds>=today&&ds<=limit){
+        const at=taskStart(t); const en=taskEnd(t);
+        items.push({uid:t.id+'@weekly-planner', ds, min:at==null?null:at, dur:(at!=null&&en!=null)?Math.max(5,en-at):(at!=null?15:null),
+          title:(t.priority==='high'?'🔴 ':'')+text, desc, alarm:at!=null&&t.alarm!==false});
+      }
+      if(t.due&&t.due!==ds&&t.due>=today&&t.due<=limit)
+        items.push({uid:t.id+'-due@weekly-planner', ds:t.due, min:null, dur:null, title:'🚩 마감: '+text, desc, alarm:false});
+    }
+  }
+  items.sort((a,b)=>a.ds<b.ds?-1:a.ds>b.ds?1:(a.min??-1)-(b.min??-1));
+  return items.slice(0,1500);
+}
 function buildRoutineICS(){
   const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
-  const BYDAY=['MO','TU','WE','TH','FR','SA','SU'];
-  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//weekly-planner//routines//KO','CALSCALE:GREGORIAN','METHOD:PUBLISH',
-    'X-WR-CALNAME:루틴 (업무 플래너)','X-WR-CALDESC:주간 업무 플래너의 반복 업무 알림','REFRESH-INTERVAL;VALUE=DURATION:PT1H','X-PUBLISHED-TTL:PT1H'];
-  const today=new Date(); today.setHours(0,0,0,0);
-  (data.recur||[]).forEach(r=>{
-    if(!r.time||r.alarm===false) return;
-    const m=String(r.time).match(/^(\d{1,2}):(\d{2})$/); if(!m) return;
-    if(r.freq==='weekly'&&!(r.weekdays||[]).length) return;
-    const hh=m[1].padStart(2,'0'), mm=m[2];
-    let first=null; for(let i=0;i<62;i++){const d=addDays(today,i); if(matchRule(r,d)){first=d; break;}} /* DTSTART는 실제 발생일이어야 함 */
-    if(!first) return;
-    let rrule;
-    if(r.freq==='daily') rrule='FREQ=DAILY';
-    else if(r.freq==='weekly') rrule='FREQ=WEEKLY;BYDAY='+(r.weekdays||[]).slice().sort((a,b)=>a-b).map(i=>BYDAY[i]).join(',');
-    else rrule='FREQ=MONTHLY;BYMONTHDAY='+r.monthday;
-    const title=icsEscape(r.text);
-    let dur=15; const en=r.end?hm2min(r.end):null; if(en!=null){dur=en-(+m[1]*60+ +m[2]); if(dur<=0) dur+=1440;}
-    lines.push('BEGIN:VEVENT','UID:'+r.id+'@weekly-planner','DTSTAMP:'+stamp,'DTSTART:'+icsDate(first)+'T'+hh+mm+'00','DURATION:PT'+dur+'M','RRULE:'+rrule,
-      'SUMMARY:'+title,'DESCRIPTION:'+icsEscape(describeRule(r)),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+title,'TRIGGER:PT0S','END:VALARM','END:VEVENT');
+  const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//weekly-planner//tasks//KO','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+    'X-WR-CALNAME:업무 플래너','X-WR-CALDESC:주간 업무 플래너의 할일·루틴','REFRESH-INTERVAL;VALUE=DURATION:PT1H','X-PUBLISHED-TTL:PT1H'];
+  calendarItems().forEach(it=>{
+    const d=it.ds.replace(/-/g,''); const title=icsEscape(it.title);
+    lines.push('BEGIN:VEVENT','UID:'+it.uid,'DTSTAMP:'+stamp);
+    if(it.min==null){ lines.push('DTSTART;VALUE=DATE:'+d); }
+    else{ lines.push('DTSTART:'+d+'T'+min2hm(it.min).replace(':','')+'00','DURATION:PT'+it.dur+'M'); }
+    lines.push('SUMMARY:'+title); if(it.desc) lines.push('DESCRIPTION:'+icsEscape(it.desc));
+    if(it.alarm) lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+title,'TRIGGER:PT0S','END:VALARM');
+    lines.push('END:VEVENT');
   });
   lines.push('END:VCALENDAR');
   return lines.map(icsFold).join('\r\n')+'\r\n';
@@ -2701,11 +2715,11 @@ async function refreshCalUrl(){
   const el=document.getElementById('calUrl'), st=document.getElementById('calStatus'); if(!el) return;
   el.value=''; const u=await calendarUrl(); el.value=u||'주소를 가져오지 못했어요 (연결 상태를 확인하세요)';
   const openBtn=document.getElementById('calOpenBtn'); if(openBtn){openBtn.href=u?u.replace(/^https:/,'webcal:'):'#'; openBtn.style.opacity=u?'1':'.5';}
-  const n=(data.recur||[]).filter(r=>r.time&&r.alarm!==false).length;
-  if(st) st.innerHTML=n?'📤 캘린더 파일 올리는 중…':'⚠️ 시간이 있는 반복 업무가 아직 없어요. 🔁 반복에서 시간을 넣어 만들면 캘린더에 올라가요.';
+  const n=calendarItems().length;
+  if(st) st.innerHTML=n?'📤 캘린더 파일 올리는 중…':'⚠️ 캘린더에 올릴 할일이 아직 없어요. 완료되지 않은 할일이 생기면 자동으로 올라가요.';
   if(!u) return;
   const ok=await syncPush(); /* 주소를 복사하기 전에 파일이 확실히 올라가 있도록 */
-  if(st&&n) st.innerHTML=ok?`✅ 시간 있는 루틴 ${n}개가 캘린더 파일로 올라가 있어요 (${fmtClock(new Date())}). 폰 캘린더는 다음 새로 고침 때 반영돼요.`:'⚠️ 캘린더 파일 업로드에 실패했어요. 잠시 후 이 창을 다시 열어보세요.';
+  if(st&&n) st.innerHTML=ok?`✅ 할일·루틴 ${n}개가 캘린더 파일로 올라가 있어요 (${fmtClock(new Date())}). 시간 있는 항목은 그 시간에 알림, 완료하면 캘린더에서도 사라져요.`:'⚠️ 캘린더 파일 업로드에 실패했어요. 잠시 후 이 창을 다시 열어보세요.';
 }
 async function syncPush(){
   const c=syncCfg(); if(!c.token||!c.gist) return;
@@ -2772,8 +2786,8 @@ document.getElementById('calCheckBtn').onclick=async()=>{
     if(!txt.startsWith('BEGIN:VCALENDAR')){st.innerHTML='❌ 주소는 열리지만 캘린더 파일이 아니에요. 동기화를 다시 연결해 보세요.'; return;}
     const ev=(txt.match(/BEGIN:VEVENT/g)||[]).length;
     const names=[...txt.matchAll(/^SUMMARY:(.*)$/gm)].map(m=>m[1].replace(/\\([,;])/g,'$1')).slice(0,5).join(', ');
-    st.innerHTML=ev?`✅ 주소 정상 · 캘린더에 루틴 ${ev}개 들어 있음 (${esc(names)}${ev>5?' …':''}). 이 주소를 그대로 구독하면 돼요.`
-                  :'⚠️ 주소는 정상인데 루틴이 0개예요. 🔁 반복 업무에 시간을 넣어 만들고 "지금 동기화" 후 다시 점검하세요. (파일 반영까지 최대 5분 걸릴 수 있어요)';
+    st.innerHTML=ev?`✅ 주소 정상 · 캘린더에 할일·루틴 ${ev}개 들어 있음 (${esc(names)}${ev>5?' …':''}). 이 주소를 그대로 구독하면 돼요.`
+                  :'⚠️ 주소는 정상인데 항목이 0개예요. "지금 동기화" 후 다시 점검하세요. (파일 반영까지 최대 5분 걸릴 수 있어요)';
   }catch(e){st.innerHTML='❌ 주소를 열 수 없어요 (네트워크 또는 차단). 브라우저에서 이 주소를 직접 열어보세요.';}
 };
 document.getElementById('syncBtn').onclick=()=>{updateSyncUI(); document.getElementById('syncOverlay').classList.add('show');};
