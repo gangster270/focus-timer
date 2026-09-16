@@ -1038,6 +1038,11 @@
         </div>
         <div class="sec-label" style="margin-top:20px;">📅 아이폰·맥 캘린더 알림</div>
         <div style="font-size:12px; color:var(--sub); line-height:1.6; margin-bottom:8px;">완료되지 않은 모든 할일과 루틴이 캘린더 구독 파일로 함께 올라가요. 아래 주소를 캘린더에 한 번 구독하면 시간 있는 항목은 그 시간에 기본 알림이 울리고, 캘린더 위젯에 오늘 할일이 보여요. 완료하면 캘린더에서도 사라져요.</div>
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px; font-size:12.5px;">
+          <label style="display:flex; align-items:center; gap:6px; cursor:pointer;"><input type="checkbox" id="calBriefOn"> 📋 오늘 할일 브리핑 알림</label>
+          <input type="time" class="date-in" id="calBriefTime" style="width:auto; padding:5px 8px;">
+          <span style="color:var(--sub);">매일 이 시간에 그날 할일 목록을 알려줘요</span>
+        </div>
         <div class="edit-btns" style="margin-bottom:8px;">
           <input type="text" class="edit-text" id="calUrl" readonly style="flex:1; margin:0; font-size:12px;" placeholder="주소를 불러오는 중…">
           <button id="calCopyBtn" style="padding:0 14px; border:1px solid var(--border); background:#fff; border-radius:11px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px; white-space:nowrap;">복사</button>
@@ -1139,6 +1144,8 @@ function normalizeData(d){
   if(!Array.isArray(d.projects)) d.projects=[];
   if(!Array.isArray(d.recur)) d.recur=[];
   d.recur=d.recur.filter(r=>r&&typeof r==='object'); d.recur.forEach(normalizeRule);
+  if(!d.cal||typeof d.cal!=='object'||Array.isArray(d.cal)) d.cal={};
+  if(d.cal.brief==null) d.cal.brief=true; if(!/^\d{2}:\d{2}$/.test(d.cal.briefTime||'')) d.cal.briefTime='08:00';
   for(const ds in d.tasks){
     if(!Array.isArray(d.tasks[ds])){delete d.tasks[ds]; continue;}
     d.tasks[ds]=d.tasks[ds].filter(t=>t&&typeof t==='object');
@@ -2681,8 +2688,20 @@ function calendarItems(){
         items.push({uid:t.id+'-due@weekly-planner', ds:t.due, min:null, dur:null, title:'🚩 마감: '+text, desc, alarm:false});
     }
   }
-  items.sort((a,b)=>a.ds<b.ds?-1:a.ds>b.ds?1:(a.min??-1)-(b.min??-1));
-  return items.slice(0,1500);
+  /* 오늘 할일 브리핑: 할일이 있는 날마다 종일 항목 + 정한 시간에 알림 */
+  const cal=data.cal||{};
+  if(cal.brief!==false){
+    const byDay={}; items.forEach(it=>{ if(!it.uid.endsWith('-due@weekly-planner')){(byDay[it.ds]=byDay[it.ds]||[]).push(it);} });
+    const bm=hm2min(cal.briefTime||'08:00')??480; const trig='PT'+Math.floor(bm/60)+'H'+(bm%60)+'M';
+    for(const ds in byDay){
+      const list=byDay[ds].slice().sort((a,b)=>(a.min??9999)-(b.min??9999));
+      const names=list.map(it=>(it.min!=null?min2hm(it.min)+' ':'')+it.title.replace(/^🔴 /,''));
+      let head=names.slice(0,3).join(', '); if(head.length>48) head=head.slice(0,47)+'…'; if(names.length>3) head+=' 외 '+(names.length-3)+'개';
+      items.push({uid:'brief-'+ds+'@weekly-planner', ds, min:null, dur:null, title:'📋 오늘 할일 '+list.length+'개: '+head, desc:names.join('\n'), alarm:true, trigger:trig, brief:true});
+    }
+  }
+  items.sort((a,b)=>a.ds<b.ds?-1:a.ds>b.ds?1:(a.brief?-1:0)-(b.brief?-1:0)||(a.min??-1)-(b.min??-1));
+  return items.slice(0,1800);
 }
 function buildRoutineICS(){
   const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}/,'');
@@ -2694,7 +2713,7 @@ function buildRoutineICS(){
     if(it.min==null){ lines.push('DTSTART;VALUE=DATE:'+d); }
     else{ lines.push('DTSTART:'+d+'T'+min2hm(it.min).replace(':','')+'00','DURATION:PT'+it.dur+'M'); }
     lines.push('SUMMARY:'+title); if(it.desc) lines.push('DESCRIPTION:'+icsEscape(it.desc));
-    if(it.alarm) lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+title,'TRIGGER:PT0S','END:VALARM');
+    if(it.alarm) lines.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:'+title,'TRIGGER:'+(it.trigger||'PT0S'),'END:VALARM');
     lines.push('END:VEVENT');
   });
   lines.push('END:VCALENDAR');
@@ -2763,8 +2782,19 @@ function updateSyncUI(){
   document.getElementById('syncConnected').classList.toggle('hidden',!connected);
   if(!connected) syncStatus('아직 연결되지 않았어요. 아래에 토큰을 넣고 연결하세요.');
   else if(!document.getElementById('syncStatus').innerHTML) syncStatus('✅ 연결됨');
-  if(connected) refreshCalUrl();
+  if(connected){
+    const on=document.getElementById('calBriefOn'), tm=document.getElementById('calBriefTime');
+    if(on&&tm){on.checked=(data.cal||{}).brief!==false; tm.value=(data.cal||{}).briefTime||'08:00';}
+    refreshCalUrl();
+  }
 }
+function setBrief(){
+  const on=document.getElementById('calBriefOn').checked, tm=document.getElementById('calBriefTime').value;
+  if(!data.cal) data.cal={}; data.cal.brief=on; if(/^\d{2}:\d{2}$/.test(tm)) data.cal.briefTime=tm;
+  save(); refreshCalUrl();
+}
+document.getElementById('calBriefOn').onchange=setBrief;
+document.getElementById('calBriefTime').onchange=setBrief;
 document.getElementById('calCopyBtn').onclick=async()=>{
   const el=document.getElementById('calUrl'); const u=el.value; if(!u.startsWith('http')){alert('아직 주소가 없어요'); return;}
   let ok=false;
