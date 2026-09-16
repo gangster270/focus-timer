@@ -20,6 +20,7 @@ let bridgeJS = """
     setAlwaysOnTop: async function (on) { post('ui', { type: 'alwaysOnTop', on: !!on }); },
     setMiniMode: async function (on, pinned) { post('ui', { type: 'miniMode', on: !!on, pinned: !!pinned }); },
     flashFrame: async function () { post('ui', { type: 'flash' }); },
+    copyText: async function (text) { post('ui', { type: 'copy', text: String(text) }); },
     fetchHolidays: async function (key, year) {
       try {
         var k = key.indexOf('%') >= 0 ? key : encodeURIComponent(key);
@@ -182,6 +183,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate,
                 // 타이머 종료 등: Dock 아이콘 튀기기 + 소리
                 NSApp.requestUserAttention(.criticalRequest)
                 NSSound(named: "Glass")?.play()
+            } else if type == "copy", let text = obj["text"] as? String {
+                let pb = NSPasteboard.general
+                pb.clearContents()
+                pb.setString(text, forType: .string)
             }
         default:
             break
@@ -212,12 +217,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate,
             decisionHandler(.download)
             return
         }
-        if let url = navigationAction.request.url,
-           navigationAction.navigationType == .linkActivated,
-           let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" {
-            NSWorkspace.shared.open(url)
-            decisionHandler(.cancel)
-            return
+        if let url = navigationAction.request.url, let scheme = url.scheme?.lowercased() {
+            // webcal:(캘린더 구독)·mailto: 등은 시스템 앱으로
+            if !["http", "https", "file", "about", "blob", "data", "javascript"].contains(scheme) {
+                NSWorkspace.shared.open(url)
+                decisionHandler(.cancel)
+                return
+            }
+            if navigationAction.navigationType == .linkActivated, scheme == "http" || scheme == "https" {
+                NSWorkspace.shared.open(url)
+                decisionHandler(.cancel)
+                return
+            }
         }
         decisionHandler(.allow)
     }
