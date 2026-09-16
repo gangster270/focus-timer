@@ -1042,6 +1042,10 @@
           <input type="text" class="edit-text" id="calUrl" readonly style="flex:1; margin:0; font-size:12px;" placeholder="주소를 불러오는 중…">
           <button id="calCopyBtn" style="padding:0 14px; border:1px solid var(--border); background:#fff; border-radius:11px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px; white-space:nowrap;">복사</button>
         </div>
+        <div class="edit-btns" style="margin-bottom:8px;">
+          <a id="calOpenBtn" href="#" class="btn-save" style="flex:1; text-align:center; text-decoration:none; padding:11px; border-radius:11px; font-weight:700; font-size:13px;">📲 캘린더 앱에서 바로 구독</a>
+          <button id="calCheckBtn" style="flex:1; padding:11px; border:1px solid var(--border); background:#fff; border-radius:11px; font-weight:600; cursor:pointer; font-family:inherit; font-size:13px;">🔍 주소 점검</button>
+        </div>
         <div id="calStatus" style="font-size:12px; color:var(--sub); line-height:1.6; margin-bottom:10px;"></div>
         <details style="font-size:12px; color:var(--sub); line-height:1.7;">
           <summary style="cursor:pointer; font-weight:700; color:var(--text);">아이폰·맥에서 구독하는 방법</summary>
@@ -2682,6 +2686,7 @@ async function calendarUrl(){
 async function refreshCalUrl(){
   const el=document.getElementById('calUrl'), st=document.getElementById('calStatus'); if(!el) return;
   el.value=''; const u=await calendarUrl(); el.value=u||'주소를 가져오지 못했어요 (연결 상태를 확인하세요)';
+  const openBtn=document.getElementById('calOpenBtn'); if(openBtn){openBtn.href=u?u.replace(/^https:/,'webcal:'):'#'; openBtn.style.opacity=u?'1':'.5';}
   const n=(data.recur||[]).filter(r=>r.time&&r.alarm!==false).length;
   if(st) st.innerHTML=n?'📤 캘린더 파일 올리는 중…':'⚠️ 시간이 있는 반복 업무가 아직 없어요. 🔁 반복에서 시간을 넣어 만들면 캘린더에 올라가요.';
   if(!u) return;
@@ -2734,8 +2739,28 @@ function updateSyncUI(){
 }
 document.getElementById('calCopyBtn').onclick=async()=>{
   const el=document.getElementById('calUrl'); const u=el.value; if(!u.startsWith('http')){alert('아직 주소가 없어요'); return;}
-  try{await navigator.clipboard.writeText(u);}catch(e){el.select(); try{document.execCommand('copy');}catch(_){}}
-  if(typeof toast==='function') toast('📅 캘린더 주소를 복사했어요'); else alert('복사했어요');
+  let ok=false;
+  if(window.electronAPI&&window.electronAPI.copyText){try{await window.electronAPI.copyText(u); ok=true;}catch(e){}} /* 맥 앱: 시스템 클립보드 */
+  if(!ok){try{await navigator.clipboard.writeText(u); ok=true;}catch(e){}}
+  if(!ok){el.select(); try{ok=document.execCommand('copy');}catch(_){}}
+  if(ok){if(typeof toast==='function') toast('📅 캘린더 주소를 복사했어요'); else alert('복사했어요');}
+  else{el.select(); alert('자동 복사가 안 돼요. 주소가 선택되어 있으니 ⌘C 로 복사하세요.');}
+};
+/* 구독 주소가 실제로 열리는지, 루틴이 몇 개 들어 있는지 점검 */
+document.getElementById('calCheckBtn').onclick=async()=>{
+  const u=document.getElementById('calUrl').value, st=document.getElementById('calStatus');
+  if(!u.startsWith('http')){st.innerHTML='⚠️ 아직 주소가 없어요. ☁️ 동기화가 연결되어 있는지 확인하세요.'; return;}
+  st.innerHTML='🔍 주소를 열어보는 중…';
+  try{
+    const r=await fetch(u+'?t='+Date.now(),{cache:'no-store'});
+    if(!r.ok){st.innerHTML=`❌ 주소가 열리지 않아요 (HTTP ${r.status}). ${r.status===404?'파일이 아직 없어요 — "지금 동기화"를 누른 뒤 1분쯤 지나 다시 점검하세요.':''}`; return;}
+    const txt=await r.text();
+    if(!txt.startsWith('BEGIN:VCALENDAR')){st.innerHTML='❌ 주소는 열리지만 캘린더 파일이 아니에요. 동기화를 다시 연결해 보세요.'; return;}
+    const ev=(txt.match(/BEGIN:VEVENT/g)||[]).length;
+    const names=[...txt.matchAll(/^SUMMARY:(.*)$/gm)].map(m=>m[1].replace(/\\([,;])/g,'$1')).slice(0,5).join(', ');
+    st.innerHTML=ev?`✅ 주소 정상 · 캘린더에 루틴 ${ev}개 들어 있음 (${esc(names)}${ev>5?' …':''}). 이 주소를 그대로 구독하면 돼요.`
+                  :'⚠️ 주소는 정상인데 루틴이 0개예요. 🔁 반복 업무에 시간을 넣어 만들고 "지금 동기화" 후 다시 점검하세요. (파일 반영까지 최대 5분 걸릴 수 있어요)';
+  }catch(e){st.innerHTML='❌ 주소를 열 수 없어요 (네트워크 또는 차단). 브라우저에서 이 주소를 직접 열어보세요.';}
 };
 document.getElementById('syncBtn').onclick=()=>{updateSyncUI(); document.getElementById('syncOverlay').classList.add('show');};
 document.getElementById('syncClose').onclick=()=>document.getElementById('syncOverlay').classList.remove('show');
