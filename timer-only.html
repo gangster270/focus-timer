@@ -1,0 +1,1052 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>Focus Timer</title>
+<style>
+  :root {
+    --bg: #f4f2ed;
+    --card: #ffffff;
+    --frame: #3d4450;
+    --face: #fdfdfb;
+    --red: #f0413c;
+    --break: #3b82f6;
+    --ink: #24292f;
+    --sub: #6b7280;
+    --line: #e5e2da;
+    --accent: #3d4450;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: "Segoe UI", "Malgun Gothic", sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    overflow-y: auto;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  .wrap { max-width: 500px; margin: 0 auto; padding: 14px 18px 30px; }
+
+  /* ---------- header ---------- */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.3px; }
+  .hbtns { display: flex; gap: 6px; }
+  .iconbtn {
+    border: 1px solid var(--line); background: var(--card); color: var(--sub);
+    border-radius: 9px; padding: 5px 9px; font-size: 14px; cursor: pointer;
+    transition: all .15s;
+  }
+  .iconbtn:hover { border-color: #c9c4b8; }
+  .iconbtn.on { background: var(--frame); color: #fff; border-color: var(--frame); }
+
+  /* ---------- current task banner ---------- */
+  #taskBanner {
+    display: none; align-items: center; gap: 8px;
+    background: #fff7ed; border: 1px solid #fed7aa; color: #9a3412;
+    border-radius: 10px; padding: 8px 12px; margin-bottom: 10px; font-size: 13.5px;
+  }
+  #taskBanner.show { display: flex; }
+  #taskBanner .txt { flex: 1; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #taskBanner button { border: none; background: none; cursor: pointer; color: #9a3412; font-size: 14px; }
+
+  /* ---------- dial ---------- */
+  .dialCard {
+    background: var(--frame);
+    border-radius: 26px;
+    padding: 16px;
+    box-shadow: 0 10px 30px rgba(40,45,55,.25);
+  }
+  .dialFace {
+    background: var(--face); border-radius: 16px; padding: 10px;
+  }
+  #dial { width: 100%; display: block; touch-action: none; }
+  #dial.settable { cursor: grab; }
+  #dial.dragging { cursor: grabbing; }
+
+  /* ---------- time & controls ---------- */
+  .timeRow { text-align: center; margin: 14px 0 4px; }
+  #timeText {
+    font-size: 54px; font-weight: 800; font-variant-numeric: tabular-nums;
+    letter-spacing: 1px; line-height: 1;
+  }
+  #timeText.urgent { color: var(--red); animation: pulse 1s infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  #modeText { font-size: 12.5px; color: var(--sub); margin-top: 6px; }
+
+  .presets { display: flex; gap: 6px; justify-content: center; flex-wrap: wrap; margin: 12px 0; }
+  .presets button {
+    border: 1px solid var(--line); background: var(--card); border-radius: 999px;
+    padding: 6px 13px; font-size: 13px; cursor: pointer; color: var(--ink); font-weight: 600;
+  }
+  .presets button:hover { border-color: var(--frame); }
+  .custom { display: flex; align-items: center; gap: 4px; }
+  .custom input {
+    width: 58px; border: 1px solid var(--line); border-radius: 999px;
+    padding: 6px 10px; font-size: 13px; text-align: center; outline: none;
+  }
+  .custom span { font-size: 13px; color: var(--sub); }
+
+  .controls { display: flex; gap: 10px; justify-content: center; margin: 14px 0 6px; }
+  .ctl {
+    border: none; border-radius: 14px; font-size: 16px; font-weight: 700;
+    padding: 13px 0; width: 150px; cursor: pointer; transition: transform .08s;
+  }
+  .ctl:active { transform: scale(.97); }
+  #startBtn { background: var(--red); color: #fff; box-shadow: 0 6px 16px rgba(240,65,60,.35); }
+  #startBtn.pause { background: var(--frame); box-shadow: 0 6px 16px rgba(40,45,55,.3); }
+  #resetBtn { background: var(--card); color: var(--sub); border: 1px solid var(--line); width: 90px; }
+
+  .stats {
+    text-align: center; font-size: 12.5px; color: var(--sub); margin-bottom: 4px;
+  }
+  .stats b { color: var(--ink); }
+
+  /* ---------- todos ---------- */
+  .todoCard {
+    background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+    padding: 16px; margin-top: 16px;
+  }
+  .todoHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .todoHead h2 { font-size: 15px; font-weight: 700; }
+  .tabs { display: flex; gap: 4px; }
+  .tabs button {
+    border: none; background: none; font-size: 12.5px; color: var(--sub);
+    padding: 4px 9px; border-radius: 999px; cursor: pointer;
+  }
+  .tabs button.on { background: var(--frame); color: #fff; }
+
+  .addRow { display: flex; gap: 6px; margin-bottom: 12px; }
+  .addRow input[type=text] {
+    flex: 1; border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px;
+    font-size: 13.5px; outline: none; min-width: 0;
+  }
+  .addRow input[type=text]:focus { border-color: var(--frame); }
+  .addRow select, .addRow input[type=date] {
+    border: 1px solid var(--line); border-radius: 10px; padding: 0 6px;
+    font-size: 12.5px; color: var(--sub); outline: none; background: #fff;
+  }
+  .addRow input[type=date] { width: 118px; }
+  .addRow .addBtn {
+    border: none; background: var(--frame); color: #fff; border-radius: 10px;
+    width: 38px; font-size: 18px; cursor: pointer; flex: none;
+  }
+
+  ul#todoList { list-style: none; }
+  li.todo {
+    display: flex; align-items: center; gap: 8px;
+    padding: 9px 4px; border-bottom: 1px solid #f0ede6;
+  }
+  li.todo:last-child { border-bottom: none; }
+  li.todo .chk {
+    width: 20px; height: 20px; border: 2px solid #cfcabd; border-radius: 7px;
+    cursor: pointer; flex: none; display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #fff; background: #fff; transition: all .15s;
+  }
+  li.todo.done .chk { background: #22c55e; border-color: #22c55e; }
+  li.todo .body { flex: 1; min-width: 0; }
+  li.todo .txt { font-size: 14px; word-break: break-all; }
+  li.todo.done .txt { text-decoration: line-through; color: #b0aca0; }
+  li.todo .meta { display: flex; gap: 6px; margin-top: 3px; align-items: center; flex-wrap: wrap; }
+  .badge {
+    font-size: 10.5px; padding: 1.5px 7px; border-radius: 999px; font-weight: 600;
+  }
+  .badge.work { background: #e0eaff; color: #2551b0; }
+  .badge.personal { background: #e5f7e9; color: #1e7d3c; }
+  .badge.due { background: #f3f1ea; color: #8a8578; }
+  .badge.due.over { background: #fee2e2; color: #b91c1c; }
+  .badge.due.today { background: #ffedd5; color: #c2410c; }
+  .pomo { font-size: 11px; color: #c2410c; }
+  li.todo .acts { display: flex; gap: 3px; flex: none; }
+  li.todo .acts button {
+    border: none; background: none; cursor: pointer; font-size: 14px;
+    color: #b8b3a5; padding: 3px 5px; border-radius: 7px;
+  }
+  li.todo .acts button:hover { background: #f3f1ea; color: var(--ink); }
+  li.todo .acts .play:hover { color: var(--red); }
+  li.todo.linked { background: #fff9f2; border-radius: 10px; }
+  #emptyMsg { text-align: center; color: #b8b3a5; font-size: 13px; padding: 18px 0; }
+
+  #doneToggle {
+    margin-top: 8px; border: none; background: none; color: var(--sub);
+    font-size: 12px; cursor: pointer; padding: 4px;
+  }
+
+  /* ---------- garden ---------- */
+  .inv { display: flex; gap: 12px; font-size: 13.5px; color: var(--sub); }
+  .inv b { color: var(--ink); }
+  .gardenHint { font-size: 12px; color: #b8b3a5; margin-bottom: 10px; }
+  #plots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .plot {
+    border: 1.5px dashed #d9d4c6; border-radius: 14px; background: #fbfaf6;
+    aspect-ratio: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; gap: 3px; cursor: pointer; transition: all .15s;
+    font-family: inherit;
+  }
+  .plot:hover { border-color: #8aa77b; background: #f2f7ee; transform: translateY(-2px); }
+  .plot .em { font-size: 30px; line-height: 1; }
+  .plot .prog { font-size: 10.5px; color: var(--sub); }
+  .plot.plantNew { border-style: dashed; color: #6f9460; font-size: 12.5px; font-weight: 700; }
+  .plot.plantNew .em { font-size: 22px; }
+  .plot.noWater { cursor: not-allowed; opacity: .75; }
+  .plot.grow { animation: grow .45s; }
+  @keyframes grow { 0% { transform: scale(.6); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+  .forest {
+    margin-top: 12px; background: #eef5e9; border-radius: 12px; padding: 10px 12px;
+    font-size: 13px; color: #3f6b33; display: none;
+  }
+  .forest.show { display: block; }
+  .forest .treesRow { font-size: 21px; letter-spacing: 2px; margin-top: 4px; word-break: break-all; }
+
+  /* ---------- garden fx ---------- */
+  .fx {
+    position: fixed; pointer-events: none; z-index: 70;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fx .seed { font-size: 24px; animation: seedDrop .75s cubic-bezier(.3,.6,.4,1.2) forwards; }
+  @keyframes seedDrop {
+    0% { transform: translateY(-52px) scale(.7) rotate(-30deg); opacity: 0; }
+    35% { opacity: 1; }
+    65% { transform: translateY(8px) scale(1) rotate(10deg); }
+    82% { transform: translateY(-6px) rotate(0deg); }
+    100% { transform: translateY(4px); opacity: 0; }
+  }
+  .fx .can {
+    position: absolute; font-size: 28px; top: -30px; right: 2px;
+    transform-origin: 30% 80%; animation: pour 1s ease-in-out forwards; opacity: 0;
+  }
+  @keyframes pour {
+    0% { transform: rotate(20deg); opacity: 0; }
+    18% { opacity: 1; transform: rotate(0deg); }
+    35%, 75% { transform: rotate(-35deg); opacity: 1; }
+    100% { transform: rotate(10deg); opacity: 0; }
+  }
+  .fx .drop { position: absolute; top: -8px; font-size: 13px; opacity: 0; animation: dropFall .55s ease-in forwards; }
+  .fx .d1 { left: 28%; animation-delay: .3s; }
+  .fx .d2 { left: 46%; animation-delay: .45s; }
+  .fx .d3 { left: 60%; animation-delay: .6s; }
+  @keyframes dropFall {
+    0% { transform: translateY(0); opacity: 0; }
+    25% { opacity: 1; }
+    100% { transform: translateY(40px); opacity: 0; }
+  }
+  .fx .spark { position: absolute; font-size: 17px; opacity: 0; animation: spark .9s ease-out forwards; }
+  @keyframes spark {
+    0% { transform: translate(0,0) scale(.4); opacity: 1; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(1.25); opacity: 0; }
+  }
+  .plot.wiggle { animation: wiggle .6s; }
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(0); }
+    25% { transform: rotate(-4deg); }
+    50% { transform: rotate(4deg); }
+    75% { transform: rotate(-2deg); }
+  }
+
+  /* ---------- quests ---------- */
+  ul#questList { list-style: none; }
+  .quest { display: flex; align-items: center; gap: 10px; padding: 9px 4px; border-bottom: 1px solid #f0ede6; }
+  .quest:last-child { border-bottom: none; }
+  .quest .qicon { font-size: 20px; flex: none; }
+  .quest .qbody { flex: 1; min-width: 0; }
+  .quest .qname { font-size: 13.5px; font-weight: 600; }
+  .quest .qbar { height: 7px; background: #f0ede6; border-radius: 99px; margin-top: 5px; overflow: hidden; }
+  .quest .qfill { height: 100%; background: linear-gradient(90deg, #8bc34a, #4caf50); border-radius: 99px; transition: width .4s; }
+  .quest .qprog { font-size: 11px; color: var(--sub); margin-top: 3px; }
+  .quest .qreward { font-size: 12.5px; color: var(--sub); flex: none; }
+  .quest button.claim {
+    border: none; background: var(--red); color: #fff; border-radius: 99px;
+    padding: 7px 13px; font-size: 12.5px; font-weight: 700; cursor: pointer; flex: none;
+    animation: pulseBtn 1.3s infinite;
+  }
+  @keyframes pulseBtn { 50% { transform: scale(1.08); box-shadow: 0 0 12px rgba(240,65,60,.5); } }
+  .quest.claimed { opacity: .55; }
+  .quest.claimed .qname { text-decoration: line-through; }
+  .quest .qdone { color: #2e7d32; font-size: 15px; flex: none; font-weight: 800; }
+  #qAllDone { font-size: 12.5px; color: #c2410c; font-weight: 700; }
+
+  /* ---------- toast ---------- */
+  #toastBox { position: fixed; bottom: 18px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; z-index: 60; pointer-events: none; }
+  .toast {
+    background: var(--frame); color: #fff; border-radius: 999px; padding: 9px 18px;
+    font-size: 13.5px; font-weight: 600; box-shadow: 0 6px 18px rgba(0,0,0,.25);
+    animation: toastIn .25s, toastOut .4s 2.3s forwards;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(14px); } }
+  @keyframes toastOut { to { opacity: 0; transform: translateY(8px); } }
+
+  /* ---------- complete overlay ---------- */
+  #overlay {
+    position: fixed; inset: 0; background: rgba(240,65,60,.94); color: #fff;
+    display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; z-index: 50; text-align: center; padding: 20px;
+  }
+  #overlay.show { display: flex; animation: fadeIn .3s; }
+  @keyframes fadeIn { from { opacity: 0; } }
+  #overlay h2 { font-size: 34px; }
+  #overlay p { font-size: 15px; opacity: .9; }
+  #overlay .obtns { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+  #overlay button {
+    border: none; border-radius: 12px; padding: 12px 20px; font-size: 15px;
+    font-weight: 700; cursor: pointer; background: rgba(255,255,255,.2); color: #fff;
+    border: 1.5px solid rgba(255,255,255,.6);
+  }
+  #overlay button.primary { background: #fff; color: var(--red); border-color: #fff; }
+  #overlay.break { background: rgba(59,130,246,.94); }
+  #overlay.break button.primary { color: var(--break); }
+
+  /* ---------- mini mode ---------- */
+  body.mini .wrap { max-width: 100%; padding: 8px 10px; }
+  body.mini header h1, body.mini .presets, body.mini .custom,
+  body.mini .todoCard, body.mini .stats, body.mini #resetBtn { display: none; }
+  body.mini #taskBanner { font-size: 11.5px; padding: 4px 9px; margin-bottom: 6px; }
+  body.mini .dialCard { padding: 8px; border-radius: 18px; }
+  body.mini .dialFace { padding: 4px; border-radius: 10px; }
+  body.mini #timeText { font-size: 30px; }
+  body.mini .timeRow { margin: 6px 0 2px; }
+  body.mini #modeText { display: none; }
+  body.mini .controls { margin: 6px 0 0; }
+  body.mini .ctl { padding: 8px 0; width: 110px; font-size: 13.5px; border-radius: 10px; }
+  body.mini header { margin-bottom: 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>⏱ 포커스 타이머</h1>
+    <div class="hbtns">
+      <button class="iconbtn" id="soundBtn" title="알람 소리 켜기/끄기">🔔</button>
+      <button class="iconbtn" id="pinBtn" title="항상 위에 고정">📌</button>
+      <button class="iconbtn" id="miniBtn" title="미니 모드 (화면 구석에 작게)">◱</button>
+    </div>
+  </header>
+
+  <div id="taskBanner">
+    <span>🎯</span><span class="txt" id="taskBannerText"></span>
+    <button id="unlinkBtn" title="연결 해제">✕</button>
+  </div>
+
+  <div class="dialCard">
+    <div class="dialFace">
+      <svg id="dial" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="200" cy="200" r="196" fill="#fdfdfb"/>
+        <path id="disk" fill="#f0413c" d=""/>
+        <g id="ticks"></g>
+        <g id="nums"></g>
+        <circle cx="200" cy="200" r="26" fill="#f2f0ea" stroke="#dcd8cc" stroke-width="1.5"/>
+        <circle cx="200" cy="200" r="7" fill="#dcd8cc"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="timeRow">
+    <div id="timeText">25:00</div>
+    <div id="modeText">다이얼을 드래그하거나 아래에서 시간을 고르세요</div>
+  </div>
+
+  <div class="presets" id="presets">
+    <button data-min="5">5분</button>
+    <button data-min="10">10분</button>
+    <button data-min="15">15분</button>
+    <button data-min="25">25분</button>
+    <button data-min="45">45분</button>
+    <button data-min="60">60분</button>
+    <span class="custom">
+      <input type="number" id="customMin" min="1" max="60" placeholder="분">
+      <span>분</span>
+    </span>
+  </div>
+
+  <div class="controls">
+    <button class="ctl" id="startBtn">▶ 시작</button>
+    <button class="ctl" id="resetBtn">초기화</button>
+  </div>
+
+  <div class="stats" id="statsText"></div>
+
+  <div class="todoCard">
+    <div class="todoHead">
+      <h2>📋 할 일</h2>
+      <div class="tabs" id="tabs">
+        <button data-cat="all" class="on">전체</button>
+        <button data-cat="work">업무</button>
+        <button data-cat="personal">개인</button>
+      </div>
+    </div>
+    <div class="addRow">
+      <input type="text" id="todoInput" placeholder="할 일을 입력하고 Enter">
+      <select id="todoCat">
+        <option value="work">업무</option>
+        <option value="personal">개인</option>
+      </select>
+      <input type="date" id="todoDue" title="마감일 (선택)">
+      <button class="addBtn" id="addBtn">+</button>
+    </div>
+    <ul id="todoList"></ul>
+    <div id="emptyMsg">할 일이 없습니다. 하나 추가해 보세요!</div>
+    <button id="doneToggle"></button>
+    <ul id="doneList" style="display:none; list-style:none;"></ul>
+  </div>
+
+  <div class="todoCard gardenCard">
+    <div class="todoHead">
+      <h2>🌳 내 정원</h2>
+      <div class="inv">
+        <span title="씨앗: 할 일을 완료하면 받아요">🌱 <b id="seedCnt">0</b></span>
+        <span title="물: 집중 세션을 마치면 받아요 (10분당 1개)">💧 <b id="waterCnt">0</b></span>
+      </div>
+    </div>
+    <div class="gardenHint">✅ 할 일 완료 = 씨앗 1개 · ⏱ 집중 완료 = 물 (10분당 1개) · 씨앗을 심고 물을 눌러 주면 나무가 자라요!</div>
+    <div id="plots"></div>
+    <div class="forest" id="forest"></div>
+  </div>
+
+  <div class="todoCard questCard">
+    <div class="todoHead">
+      <h2>🗺 오늘의 퀘스트</h2>
+      <span id="qAllDone"></span>
+    </div>
+    <ul id="questList"></ul>
+  </div>
+</div>
+
+<div id="toastBox"></div>
+
+<div id="overlay">
+  <h2 id="ovTitle">⏰ 시간 완료!</h2>
+  <p id="ovMsg"></p>
+  <div class="obtns">
+    <button id="ovBreak">☕ 휴식 5분</button>
+    <button id="ovMore">+5분 더</button>
+    <button id="ovClose" class="primary">확인</button>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================= persistence ================= */
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('ft.' + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { localStorage.setItem('ft.' + k, JSON.stringify(v)); }
+};
+
+/* ================= state ================= */
+let totalSec  = store.get('lastMin', 25) * 60;  // set duration
+let remainSec = totalSec;
+let endTime   = null;
+let running   = false;
+let mode      = 'focus';           // 'focus' | 'break'
+let linkedTodoId = store.get('linkedTodo', null);
+let settings  = store.get('settings', { sound: true, pinned: false, mini: false });
+settings.mini = false; // always start in normal mode
+let todos     = store.get('todos', []);
+let stats     = store.get('stats', {});
+let garden    = store.get('garden', { seeds: 0, water: 0, plants: [], forest: [] });
+let curTab    = 'all';
+let lastWholeSec = null;
+let suggestedBreak = 5;
+
+const $ = id => document.getElementById(id);
+const CX = 200, CY = 200, R = 150;
+
+/* ================= dial rendering ================= */
+(function buildDial() {
+  const ticks = $('ticks'), nums = $('nums');
+  let t = '', n = '';
+  for (let m = 0; m < 60; m++) {
+    const a = -m * 6 * Math.PI / 180;
+    const sin = Math.sin(a), cos = Math.cos(a);
+    const major = m % 5 === 0;
+    const r1 = major ? R + 4 : R + 10, r2 = R + 18;
+    t += `<line x1="${CX + r1 * sin}" y1="${CY - r1 * cos}" x2="${CX + r2 * sin}" y2="${CY - r2 * cos}"
+          stroke="#24292f" stroke-width="${major ? 3 : 1.6}" stroke-linecap="round"/>`;
+    if (major) {
+      const rn = R + 34;
+      n += `<text x="${CX + rn * sin}" y="${CY - rn * cos}" font-size="26" font-weight="700"
+            fill="#24292f" text-anchor="middle" dominant-baseline="central"
+            font-family="Segoe UI, sans-serif">${m}</text>`;
+    }
+  }
+  ticks.innerHTML = t;
+  nums.innerHTML = n;
+})();
+
+function drawDisk() {
+  const frac = Math.max(0, Math.min(1, remainSec / 3600));
+  const disk = $('disk');
+  disk.setAttribute('fill', mode === 'break' ? 'var(--break)' : 'var(--red)');
+  if (frac <= 0.0002) { disk.setAttribute('d', ''); return; }
+  const a = frac * 360;
+  if (a >= 359.99) {
+    disk.setAttribute('d', `M ${CX} ${CY - R} A ${R} ${R} 0 1 1 ${CX - 0.01} ${CY - R} Z`);
+    return;
+  }
+  const rad = a * Math.PI / 180;
+  const x = CX - R * Math.sin(rad), y = CY - R * Math.cos(rad);
+  const large = a > 180 ? 1 : 0;
+  disk.setAttribute('d', `M ${CX} ${CY} L ${CX} ${CY - R} A ${R} ${R} 0 ${large} 0 ${x} ${y} Z`);
+}
+
+/* ================= dial drag-to-set ================= */
+const dial = $('dial');
+let dragging = false;
+
+function minutesFromEvent(ev) {
+  const rect = dial.getBoundingClientRect();
+  const scale = 400 / rect.width;
+  const dx = (ev.clientX - rect.left) * scale - CX;
+  const dy = (ev.clientY - rect.top) * scale - CY;
+  let deg = Math.atan2(dx, -dy) * 180 / Math.PI;   // clockwise from top
+  let m = Math.round(((360 - deg) % 360) / 6);
+  if (m === 0 && deg < 6 && deg > -6) m = 0;
+  if (m <= 0) m = deg > -30 && deg < 30 ? 60 : 1;  // near top: snap to 60
+  return Math.max(1, Math.min(60, m));
+}
+dial.addEventListener('pointerdown', ev => {
+  if (running) return;
+  dragging = true;
+  dial.classList.add('dragging');
+  dial.setPointerCapture(ev.pointerId);
+  setDuration(minutesFromEvent(ev));
+});
+dial.addEventListener('pointermove', ev => { if (dragging) setDuration(minutesFromEvent(ev)); });
+dial.addEventListener('pointerup', () => { dragging = false; dial.classList.remove('dragging'); });
+
+/* ================= timer core ================= */
+function setDuration(min) {
+  totalSec = Math.round(min * 60);
+  remainSec = totalSec;
+  mode = 'focus';
+  store.set('lastMin', min);
+  render();
+}
+
+function start() {
+  if (remainSec <= 0) remainSec = totalSec;
+  endTime = Date.now() + remainSec * 1000;
+  running = true;
+  ensureAudio();
+  render();
+  loop();
+}
+function pause() {
+  remainSec = Math.max(0, (endTime - Date.now()) / 1000);
+  running = false;
+  render();
+}
+function reset() {
+  running = false;
+  mode = 'focus';
+  totalSec = store.get('lastMin', 25) * 60;
+  remainSec = totalSec;
+  render();
+}
+
+function loop() {
+  if (!running) return;
+  remainSec = (endTime - Date.now()) / 1000;
+  if (remainSec <= 0) { remainSec = 0; complete(); return; }
+  const whole = Math.ceil(remainSec);
+  if (whole !== lastWholeSec) { lastWholeSec = whole; renderTime(); }
+  drawDisk();
+  requestAnimationFrame(loop);
+}
+
+function complete() {
+  running = false;
+  const wasFocus = mode === 'focus';
+  drawDisk(); renderTime();
+  playAlarm();
+  if (window.electronAPI) window.electronAPI.flashFrame();
+  try {
+    new Notification(wasFocus ? '⏰ 집중 시간 완료!' : '☕ 휴식 끝!', {
+      body: wasFocus
+        ? (linkedTodo() ? `"${linkedTodo().text}" 세션을 마쳤어요. 잘했어요! 🍅` : `${Math.round(totalSec / 60)}분 집중을 마쳤어요!`)
+        : '다시 집중할 시간이에요.'
+    });
+  } catch {}
+  let earnedWater = 0;
+  if (wasFocus) {
+    const min = Math.round(totalSec / 60);
+    const d = todayKey();
+    if (!stats[d]) stats[d] = { min: 0, sessions: 0 };
+    stats[d].min += min;
+    stats[d].sessions += 1;
+    store.set('stats', stats);
+    const t = linkedTodo();
+    if (t) { t.pomos = (t.pomos || 0) + 1; saveTodos(); }
+    earnedWater = Math.max(1, Math.round(min / 10));
+    garden.water += earnedWater;
+    saveGarden();
+    qProg('session1', 1);
+    qProg('focus25', min);
+  }
+  showOverlay(wasFocus, earnedWater);
+  render();
+}
+
+function linkedTodo() { return todos.find(t => t.id === linkedTodoId) || null; }
+
+/* ================= overlay ================= */
+function breakFor(focusMin) {
+  return focusMin >= 55 ? 15 : focusMin >= 30 ? 10 : 5;
+}
+function showOverlay(wasFocus, earnedWater) {
+  const ov = $('overlay');
+  ov.classList.toggle('break', !wasFocus);
+  $('ovTitle').textContent = wasFocus ? '⏰ 시간 완료!' : '☕ 휴식 끝!';
+  let msg = wasFocus
+    ? (linkedTodo() ? `"${linkedTodo().text}" — ${Math.round(totalSec / 60)}분 집중 완료 🍅` : `${Math.round(totalSec / 60)}분 집중 완료!`)
+    : '준비되면 다시 시작해요.';
+  if (earnedWater) msg += `  ·  💧 물 +${earnedWater}`;
+  $('ovMsg').textContent = msg;
+  suggestedBreak = breakFor(Math.round(totalSec / 60));
+  $('ovBreak').textContent = `☕ 휴식 ${suggestedBreak}분`;
+  $('ovBreak').style.display = wasFocus ? '' : 'none';
+  ov.classList.add('show');
+}
+$('ovClose').onclick = () => { $('overlay').classList.remove('show'); reset(); };
+$('ovMore').onclick = () => {
+  $('overlay').classList.remove('show');
+  totalSec = 5 * 60; remainSec = totalSec; start();
+};
+$('ovBreak').onclick = () => {
+  $('overlay').classList.remove('show');
+  mode = 'break'; totalSec = suggestedBreak * 60; remainSec = totalSec; start();
+};
+
+/* ================= sound ================= */
+let audioCtx = null;
+function ensureAudio() {
+  if (!audioCtx) { try { audioCtx = new AudioContext(); } catch {} }
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
+function beep(when, freq, dur) {
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  g.gain.setValueAtTime(0, when);
+  g.gain.linearRampToValueAtTime(0.5, when + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, when + dur);
+  o.connect(g).connect(audioCtx.destination);
+  o.start(when); o.stop(when + dur + 0.05);
+}
+function playAlarm() {
+  if (!settings.sound) return;
+  ensureAudio();
+  if (!audioCtx) return;
+  const t0 = audioCtx.currentTime + 0.05;
+  for (let r = 0; r < 3; r++) {
+    const base = t0 + r * 0.9;
+    beep(base, 880, 0.18); beep(base + 0.22, 1175, 0.18); beep(base + 0.44, 1568, 0.3);
+  }
+}
+
+/* ================= render ================= */
+function fmt(s) {
+  s = Math.max(0, Math.ceil(s));
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+function renderTime() {
+  const tt = $('timeText');
+  tt.textContent = fmt(remainSec);
+  tt.classList.toggle('urgent', running && remainSec <= 60 && mode === 'focus');
+  document.title = running ? `${fmt(remainSec)} - Focus Timer` : 'Focus Timer';
+}
+function render() {
+  drawDisk();
+  renderTime();
+  const sb = $('startBtn');
+  sb.textContent = running ? '⏸ 일시정지' : (remainSec > 0 && remainSec < totalSec ? '▶ 계속' : '▶ 시작');
+  sb.classList.toggle('pause', running);
+  $('modeText').textContent = running
+    ? (mode === 'break' ? '휴식 중... 편하게 쉬세요 ☕' : '집중 중! 빨간 영역이 남은 시간이에요 🔴')
+    : '다이얼을 드래그하거나 아래에서 시간을 고르세요';
+  dial.classList.toggle('settable', !running);
+  const d = stats[todayKey()] || { min: 0, sessions: 0 };
+  $('statsText').innerHTML = `오늘 집중 <b>${d.min}분</b> · 완료 세션 <b>${d.sessions}회</b>`;
+  renderBanner();
+}
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+
+function renderBanner() {
+  const t = linkedTodo();
+  const b = $('taskBanner');
+  if (t && !t.done) {
+    $('taskBannerText').textContent = '지금 집중: ' + t.text;
+    b.classList.add('show');
+  } else {
+    b.classList.remove('show');
+    if (t && t.done) { linkedTodoId = null; store.set('linkedTodo', null); }
+  }
+}
+$('unlinkBtn').onclick = () => { linkedTodoId = null; store.set('linkedTodo', null); render(); renderTodos(); };
+
+/* ================= controls ================= */
+$('startBtn').onclick = () => running ? pause() : start();
+$('resetBtn').onclick = reset;
+$('presets').querySelectorAll('button').forEach(b => {
+  b.onclick = () => { if (!running) setDuration(+b.dataset.min); };
+});
+$('customMin').addEventListener('change', e => {
+  let v = Math.max(1, Math.min(60, +e.target.value || 25));
+  e.target.value = v;
+  if (!running) setDuration(v);
+});
+$('customMin').addEventListener('keydown', e => { if (e.key === 'Enter') e.target.blur(); });
+
+/* ================= header buttons ================= */
+function refreshHeaderBtns() {
+  $('soundBtn').classList.toggle('on', settings.sound);
+  $('soundBtn').textContent = settings.sound ? '🔔' : '🔕';
+  $('pinBtn').classList.toggle('on', settings.pinned);
+  $('miniBtn').classList.toggle('on', settings.mini);
+}
+$('soundBtn').onclick = () => {
+  settings.sound = !settings.sound; store.set('settings', settings); refreshHeaderBtns();
+};
+$('pinBtn').onclick = async () => {
+  settings.pinned = !settings.pinned;
+  if (window.electronAPI) await window.electronAPI.setAlwaysOnTop(settings.pinned);
+  store.set('settings', settings); refreshHeaderBtns();
+};
+$('miniBtn').onclick = async () => {
+  settings.mini = !settings.mini;
+  document.body.classList.toggle('mini', settings.mini);
+  if (window.electronAPI) await window.electronAPI.setMiniMode(settings.mini, settings.pinned);
+  refreshHeaderBtns();
+};
+
+/* ================= todos ================= */
+function saveTodos() { store.set('todos', todos); renderTodos(); }
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function dueBadge(t) {
+  if (!t.due) return '';
+  const today = todayKey();
+  const diff = Math.round((new Date(t.due) - new Date(today)) / 86400000);
+  let cls = 'due', label;
+  if (diff < 0) { cls += ' over'; label = `${-diff}일 지남`; }
+  else if (diff === 0) { cls += ' today'; label = '오늘까지'; }
+  else if (diff === 1) label = '내일까지';
+  else label = `D-${diff}`;
+  return `<span class="badge ${cls}">📅 ${label}</span>`;
+}
+function todoItemHtml(t) {
+  const cat = t.cat === 'work'
+    ? '<span class="badge work">업무</span>'
+    : '<span class="badge personal">개인</span>';
+  const pomo = t.pomos ? `<span class="pomo">🍅×${t.pomos}</span>` : '';
+  const linked = t.id === linkedTodoId && !t.done;
+  return `<li class="todo ${t.done ? 'done' : ''} ${linked ? 'linked' : ''}" data-id="${t.id}">
+    <div class="chk" data-act="toggle">${t.done ? '✓' : ''}</div>
+    <div class="body">
+      <div class="txt">${escapeHtml(t.text)}</div>
+      <div class="meta">${cat}${dueBadge(t)}${pomo}</div>
+    </div>
+    <div class="acts">
+      ${t.done ? '' : `<button class="play" data-act="focus" title="이 할 일로 집중 시작">▶</button>`}
+      <button data-act="del" title="삭제">🗑</button>
+    </div>
+  </li>`;
+}
+function renderTodos() {
+  const open = todos.filter(t => !t.done && (curTab === 'all' || t.cat === curTab));
+  const done = todos.filter(t => t.done && (curTab === 'all' || t.cat === curTab));
+  open.sort((a, b) => {
+    if (!!a.due !== !!b.due) return a.due ? -1 : 1;
+    if (a.due && b.due && a.due !== b.due) return a.due < b.due ? -1 : 1;
+    return a.created - b.created;
+  });
+  $('todoList').innerHTML = open.map(todoItemHtml).join('');
+  $('emptyMsg').style.display = open.length ? 'none' : '';
+  const dt = $('doneToggle'), dl = $('doneList');
+  if (done.length) {
+    dt.style.display = '';
+    dt.textContent = (dl.style.display === 'none' ? '▸' : '▾') + ` 완료됨 ${done.length}개`;
+    dl.innerHTML = done.map(todoItemHtml).join('');
+  } else { dt.style.display = 'none'; dl.style.display = 'none'; }
+}
+$('doneToggle').onclick = () => {
+  const dl = $('doneList');
+  dl.style.display = dl.style.display === 'none' ? '' : 'none';
+  renderTodos();
+};
+function handleListClick(e) {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const li = e.target.closest('li.todo');
+  const t = todos.find(x => x.id === li.dataset.id);
+  if (!t) return;
+  const act = btn.dataset.act;
+  if (act === 'toggle') {
+    t.done = !t.done;
+    if (t.done && t.id === linkedTodoId) { linkedTodoId = null; store.set('linkedTodo', null); }
+    if (t.done && !t.rewarded) {
+      t.rewarded = true;
+      garden.seeds += 1;
+      saveGarden();
+      toast('🌱 씨앗 +1! 정원에 심어보세요');
+      qProg('todo2', 1);
+    }
+    saveTodos(); render();
+  } else if (act === 'del') {
+    todos = todos.filter(x => x.id !== t.id);
+    if (t.id === linkedTodoId) { linkedTodoId = null; store.set('linkedTodo', null); }
+    saveTodos(); render();
+  } else if (act === 'focus') {
+    linkedTodoId = t.id; store.set('linkedTodo', t.id);
+    render(); renderTodos();
+    if (!running) start();
+  }
+}
+$('todoList').onclick = handleListClick;
+$('doneList').onclick = handleListClick;
+
+function addTodo() {
+  const inp = $('todoInput');
+  const text = inp.value.trim();
+  if (!text) return;
+  todos.push({
+    id: 't' + Date.now() + Math.random().toString(36).slice(2, 6),
+    text, cat: $('todoCat').value, due: $('todoDue').value || null,
+    done: false, pomos: 0, created: Date.now()
+  });
+  inp.value = ''; $('todoDue').value = '';
+  saveTodos();
+  inp.focus();
+}
+$('addBtn').onclick = addTodo;
+$('todoInput').addEventListener('keydown', e => { if (e.key === 'Enter') addTodo(); });
+
+$('tabs').querySelectorAll('button').forEach(b => {
+  b.onclick = () => {
+    curTab = b.dataset.cat;
+    $('tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    renderTodos();
+  };
+});
+
+/* ================= garden ================= */
+const STAGE_EM = ['🫘', '🌱', '🪴', '🌿'];          // growing stages
+const STAGE_COST = [1, 2, 3, 4];                    // water needed to leave each stage
+const TREE_EM = ['🌳', '🌲', '🌸', '🍎', '🍋', '🌴'];
+
+function saveGarden() { store.set('garden', garden); renderGarden(); }
+
+/* ---- visual fx (fixed overlays survive re-render) ---- */
+function fxAt(rect, html, ms) {
+  const d = document.createElement('div');
+  d.className = 'fx';
+  d.style.left = rect.left + 'px';
+  d.style.top = rect.top + 'px';
+  d.style.width = rect.width + 'px';
+  d.style.height = rect.height + 'px';
+  d.innerHTML = html;
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), ms);
+}
+function fxSeed(rect) { fxAt(rect, '<span class="seed">🫘</span>', 850); }
+function fxWater(rect) {
+  fxAt(rect, '<span class="can">🫗</span><span class="drop d1">💧</span><span class="drop d2">💧</span><span class="drop d3">💧</span>', 1200);
+}
+function fxBurst(rect, ems, n) {
+  let h = '';
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * 2 * Math.PI, r = 26 + Math.random() * 44;
+    h += `<span class="spark" style="--dx:${(Math.cos(a) * r).toFixed(0)}px;--dy:${(Math.sin(a) * r).toFixed(0)}px;animation-delay:${(Math.random() * .18).toFixed(2)}s">${ems[Math.floor(Math.random() * ems.length)]}</span>`;
+  }
+  fxAt(rect, h, 1200);
+}
+function wigglePlot(i) {
+  const el = $('plots').querySelector(`[data-i="${i}"]`);
+  if (el) { el.classList.add('wiggle'); setTimeout(() => el.classList.remove('wiggle'), 650); }
+}
+
+function toast(msg) {
+  const d = document.createElement('div');
+  d.className = 'toast';
+  d.textContent = msg;
+  $('toastBox').appendChild(d);
+  setTimeout(() => d.remove(), 2800);
+}
+
+function renderGarden() {
+  $('seedCnt').textContent = garden.seeds;
+  $('waterCnt').textContent = garden.water;
+  let html = garden.plants.map((p, i) => {
+    const cost = STAGE_COST[p.stage];
+    return `<button class="plot ${garden.water < 1 ? 'noWater' : ''}" data-i="${i}"
+      title="물 주기 (💧1 사용)">
+      <span class="em">${STAGE_EM[p.stage]}</span>
+      <span class="prog">💧 ${p.watered}/${cost}</span>
+    </button>`;
+  }).join('');
+  if (garden.seeds > 0) {
+    html += `<button class="plot plantNew" data-plant="1" title="씨앗 1개를 심어요">
+      <span class="em">🌱</span><span>+ 심기</span></button>`;
+  }
+  $('plots').innerHTML = html;
+  const f = $('forest');
+  if (garden.forest.length) {
+    f.classList.add('show');
+    const shown = garden.forest.slice(-40).join('');
+    f.innerHTML = `🏞 나의 숲 — 지금까지 <b>${garden.forest.length}그루</b>를 키웠어요!
+      <div class="treesRow">${shown}${garden.forest.length > 40 ? ' …' : ''}</div>`;
+  } else f.classList.remove('show');
+}
+
+$('plots').onclick = e => {
+  const btn = e.target.closest('.plot');
+  if (!btn) return;
+  const rect = btn.getBoundingClientRect();
+
+  if (btn.dataset.plant) {
+    if (garden.seeds < 1) return;
+    garden.seeds -= 1;
+    garden.plants.push({ stage: 0, watered: 0 });
+    saveGarden();
+    const newIdx = garden.plants.length - 1;
+    const newEl = $('plots').querySelector(`[data-i="${newIdx}"]`);
+    fxSeed(newEl ? newEl.getBoundingClientRect() : rect);
+    toast('🫘 씨앗을 심었어요! 물을 주면 자라요');
+    return;
+  }
+
+  const i = +btn.dataset.i;
+  const p = garden.plants[i];
+  if (!p) return;
+  if (garden.water < 1) { toast('💧 물이 없어요 — 타이머로 집중하면 받을 수 있어요!'); return; }
+  garden.water -= 1;
+  p.watered += 1;
+  fxWater(rect);
+  qProg('water5', 1);
+
+  if (p.watered >= STAGE_COST[p.stage]) {
+    p.stage += 1;
+    p.watered = 0;
+    if (p.stage >= STAGE_EM.length) {
+      const tree = TREE_EM[Math.floor(Math.random() * TREE_EM.length)];
+      garden.plants.splice(i, 1);
+      garden.forest.push(tree);
+      saveGarden();
+      fxBurst(rect, ['🎉', '✨', '🌟', tree], 14);
+      toast(`${tree} 나무가 다 자라서 숲으로 갔어요! (총 ${garden.forest.length}그루)`);
+      return;
+    }
+    saveGarden();
+    setTimeout(() => {
+      const nextBtn = $('plots').querySelector(`[data-i="${i}"]`);
+      if (nextBtn) {
+        nextBtn.classList.add('grow');
+        setTimeout(() => nextBtn.classList.remove('grow'), 500);
+        fxBurst(nextBtn.getBoundingClientRect(), ['✨'], 6);
+      }
+    }, 650);
+    toast(`${STAGE_EM[p.stage]} 한 단계 자랐어요!`);
+    return;
+  }
+  saveGarden();
+  setTimeout(() => wigglePlot(i), 700);
+};
+
+/* ================= quests ================= */
+const QUESTS = [
+  { id: 'session1', name: '집중 세션 1회 완료하기', icon: '⏱', target: 1, unit: '회', reward: { water: 2 }, rtext: '💧×2' },
+  { id: 'focus25',  name: '총 25분 집중하기',       icon: '🔥', target: 25, unit: '분', reward: { water: 3 }, rtext: '💧×3' },
+  { id: 'todo2',    name: '할 일 2개 완료하기',     icon: '✅', target: 2, unit: '개', reward: { seeds: 1 }, rtext: '🌱×1' },
+  { id: 'water5',   name: '식물에 물 5번 주기',     icon: '💦', target: 5, unit: '번', reward: { seeds: 1 }, rtext: '🌱×1' }
+];
+let quest = store.get('quest', null);
+
+function initQuest() {
+  const d = todayKey();
+  if (!quest || quest.date !== d) {
+    quest = { date: d, prog: {}, claimed: {}, bonus: false };
+    store.set('quest', quest);
+  }
+}
+function qProg(id, amt) {
+  initQuest();
+  const q = QUESTS.find(x => x.id === id);
+  const before = quest.prog[id] || 0;
+  quest.prog[id] = before + amt;
+  store.set('quest', quest);
+  renderQuests();
+  if (before < q.target && quest.prog[id] >= q.target && !quest.claimed[id]) {
+    toast(`🗺 퀘스트 달성! "${q.name}" — 보상을 받으세요`);
+  }
+}
+function renderQuests() {
+  initQuest();
+  $('questList').innerHTML = QUESTS.map(q => {
+    const prog = Math.min(quest.prog[q.id] || 0, q.target);
+    const done = (quest.prog[q.id] || 0) >= q.target;
+    const claimed = !!quest.claimed[q.id];
+    const pct = Math.round(prog / q.target * 100);
+    let right;
+    if (claimed) right = '<span class="qdone">✓</span>';
+    else if (done) right = `<button class="claim" data-q="${q.id}">보상 받기</button>`;
+    else right = `<span class="qreward">${q.rtext}</span>`;
+    return `<li class="quest ${claimed ? 'claimed' : ''}">
+      <span class="qicon">${q.icon}</span>
+      <div class="qbody">
+        <div class="qname">${q.name}</div>
+        <div class="qbar"><div class="qfill" style="width:${pct}%"></div></div>
+        <div class="qprog">${prog}/${q.target}${q.unit} · 보상 ${q.rtext}</div>
+      </div>
+      ${right}
+    </li>`;
+  }).join('');
+  const allClaimed = QUESTS.every(q => quest.claimed[q.id]);
+  $('qAllDone').textContent = allClaimed ? '🌟 올클리어!' : '';
+}
+$('questList').onclick = e => {
+  const btn = e.target.closest('button.claim');
+  if (!btn) return;
+  const q = QUESTS.find(x => x.id === btn.dataset.q);
+  if (!q || quest.claimed[q.id]) return;
+  const rect = btn.getBoundingClientRect();
+  quest.claimed[q.id] = true;
+  store.set('quest', quest);
+  if (q.reward.seeds) garden.seeds += q.reward.seeds;
+  if (q.reward.water) garden.water += q.reward.water;
+  saveGarden();
+  fxBurst(rect, ['🎉', '✨', '⭐'], 10);
+  toast(`🎁 보상 획득: ${q.rtext}`);
+  if (QUESTS.every(x => quest.claimed[x.id]) && !quest.bonus) {
+    quest.bonus = true;
+    store.set('quest', quest);
+    garden.seeds += 1;
+    saveGarden();
+    setTimeout(() => {
+      toast('🌟 오늘의 퀘스트 올클리어! 보너스 씨앗 +1');
+      fxBurst($('qAllDone').getBoundingClientRect(), ['🌟', '🎉', '✨'], 14);
+    }, 900);
+  }
+  renderQuests();
+};
+
+/* ================= keyboard ================= */
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+  if (e.code === 'Space') { e.preventDefault(); running ? pause() : start(); }
+  if (e.key === 'r' || e.key === 'R') reset();
+});
+
+/* ================= init ================= */
+if (window.electronAPI && settings.pinned) window.electronAPI.setAlwaysOnTop(true);
+if ('Notification' in window && Notification.permission === 'default') {
+  try { Notification.requestPermission(); } catch {}
+}
+refreshHeaderBtns();
+render();
+renderTodos();
+renderGarden();
+renderQuests();
+</script>
+</body>
+</html>

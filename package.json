@@ -1,0 +1,54 @@
+{
+  "name": "focus-timer",
+  "version": "1.0.0",
+  "description": "타임타이머 스타일 시각 타이머 + 할 일 관리 (ADHD 친화)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win",
+    "dist:mac": "electron-builder --mac"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.duce.focus-timer",
+    "productName": "FocusTimer",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "shortcutName": "포커스 타이머"
+    },
+    "portable": {
+      "artifactName": "포커스타이머-portable-${version}.exe"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
+      "artifactName": "FocusTimer-${version}-${arch}.${ext}",
+      "darkModeSupport": false
+    }
+  }
+}

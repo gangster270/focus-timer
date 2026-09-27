@@ -347,7 +347,14 @@
   .w-list{display:flex; flex-direction:column; gap:5px;}
   body.widget-mode .task .txt{font-size:14px;}
   body.widget-mode .task{padding:9px 9px 9px 10px;}
-  body.widget-mode .task .del{display:none;}
+  /* 위젯에선 ⋯ 을 평소엔 숨기고 마우스를 올리면 보여줌 (맨 위로·삭제 등을 여기서도 쓰게) */
+  body.widget-mode .task .del{opacity:0; transition:.12s;}
+  body.widget-mode .task:hover .del{opacity:1;}
+  .w-head-btns{display:flex; gap:6px; flex-shrink:0;}
+  /* 왼쪽에 붙은(도킹) 창: 창 폭을 그대로 다 씀 */
+  body.docked{padding:8px;}
+  body.docked .wrap{max-width:none;}
+  body.docked .widget-card{border-radius:14px; padding:14px;}
   .wg-toolbar{margin-bottom:10px;}
   .wg-toggle{display:inline-flex; gap:3px; background:var(--bg); border-radius:9px; padding:3px;}
   .wg-toggle button{border:none; background:none; padding:5px 14px; border-radius:7px; font-size:12px; font-weight:700; color:var(--sub); cursor:pointer; font-family:inherit;}
@@ -374,6 +381,7 @@
   .overlay{position:fixed; inset:0; background:rgba(0,0,0,0.35); display:none; align-items:center; justify-content:center; z-index:100; padding:20px;}
   .overlay.show{display:flex;}
   #editOverlay{z-index:110;} #confirmOverlay{z-index:120;}
+  #cfMsg{white-space:pre-line;}   /* 확인창 문구의 줄바꿈(\n) 표시 */
   .modal{background:#fff; border-radius:20px; width:100%; max-width:460px; max-height:85vh; overflow-y:auto; box-shadow:0 10px 40px rgba(0,0,0,0.2); animation:pop .18s ease;}
   @keyframes pop{from{transform:scale(.96); opacity:0;}to{transform:scale(1); opacity:1;}}
   .modal-head{padding:20px 22px 14px; display:flex; align-items:center; justify-content:space-between;
@@ -455,6 +463,43 @@
   body.memo-open{margin-right:320px;}
   @media (max-width:1000px){body.memo-open{margin-right:0;}}
   body.widget-mode.memo-open{margin-right:0;}
+  /* ===== 밀린 할일 패널 (왼쪽) ===== */
+  .bl-panel{position:fixed; top:0; left:0; width:310px; height:100vh; background:var(--card); box-shadow:4px 0 24px rgba(0,0,0,0.10); z-index:90; display:flex; flex-direction:column; transform:translateX(-100%); transition:transform .25s ease;}
+  body.bl-open .bl-panel{transform:translateX(0);}
+  body.bl-open{margin-left:310px;}
+  @media (max-width:1000px){body.bl-open{margin-left:0;}}
+  body.widget-mode .bl-panel{display:none;}
+  body.widget-mode.bl-open{margin-left:0;}
+  body.bl-open .weekdrop.left{left:322px;}
+  .bl-tools{display:flex; align-items:center; gap:8px; padding:10px 18px; border-bottom:1px solid var(--border2); flex-wrap:wrap;}
+  .bl-tools button{border:none; background:var(--primary); color:#fff; font-weight:700; font-size:12px; padding:6px 11px; border-radius:8px; cursor:pointer; font-family:inherit;}
+  .bl-tools button:disabled{opacity:.4; cursor:default;}
+  .bl-tip{font-size:11px; color:var(--sub); line-height:1.4;}
+  .bl-duechk{display:inline-flex; align-items:center; gap:4px; font-size:12px; font-weight:700; color:var(--text); cursor:pointer; user-select:none;}
+  .bl-duechk input{width:14px; height:14px; margin:0; accent-color:var(--primary); cursor:pointer;}
+  .bl-group{font-size:12px; font-weight:800; color:var(--sub); margin:16px 2px 7px;}
+  .bl-group:first-child{margin-top:0;}
+  .bl-group.over{color:var(--high);}
+  .bl-item{display:flex; gap:9px; align-items:flex-start; padding:9px 10px; border:1px solid var(--border2); border-left:3px solid var(--border); border-radius:11px; background:#fff; margin-bottom:7px; cursor:grab;}
+  .bl-item.over{border-left-color:var(--high);}
+  .bl-item.dragging{opacity:.45;}
+  .bl-chk{width:17px; height:17px; box-sizing:border-box; border:2px solid var(--border); border-radius:5px; flex-shrink:0; margin-top:1px; cursor:pointer; transition:.12s;}
+  .bl-chk:hover{border-color:var(--done); background:#E7F8F1;}
+  .bl-main{flex:1; min-width:0;}
+  .bl-txt{font-size:13px; line-height:1.4; word-break:break-word; cursor:pointer;}
+  .bl-txt .task-time{font-weight:800; color:var(--primary);}
+  .bl-meta{display:flex; gap:4px; flex-wrap:wrap; margin-top:4px; align-items:center;}
+  .bl-from{font-size:10.5px; font-weight:700; color:var(--sub); background:var(--bg); padding:1px 6px; border-radius:6px;}
+  .bl-days{display:flex; gap:3px; margin-top:7px;}
+  .bl-days button{flex:1; min-width:0; border:1px solid var(--border); background:#fff; border-radius:6px; padding:3px 0; font-size:10.5px; font-weight:700; color:var(--sub); cursor:pointer; font-family:inherit; transition:.1s;}
+  .bl-days button:hover:not(:disabled){border-color:var(--primary); color:var(--primary); background:var(--primary-light);}
+  .bl-days button.today{border-color:var(--primary); color:var(--primary); font-weight:800;}
+  .bl-days button:disabled{opacity:.3; cursor:default;}
+  .bl-badge{background:var(--high); color:#fff; font-size:10px; font-weight:800; padding:0 6px; border-radius:8px; margin-left:2px;}
+  button.od-pill{border:none; cursor:pointer; font-family:inherit;}
+  button.od-pill:hover{filter:brightness(.95);}
+  .bl-mini{margin-left:auto; border:1px solid currentColor; background:#fff; color:var(--high); font-size:10.5px; font-weight:700; border-radius:6px; padding:1px 7px; cursor:pointer; font-family:inherit;}
+  .bl-wfrom{font-size:10px; font-weight:700; color:var(--sub); margin:6px 2px 2px;}
   .memo-head{display:flex; justify-content:space-between; align-items:center; padding:18px 18px 14px; border-bottom:1px solid var(--border2);}
   .memo-title{font-size:16px; font-weight:800;}
   .memo-body{flex:1; overflow-y:auto; padding:16px 18px 24px;}
@@ -493,6 +538,18 @@
   .rc-item .ri-txt{font-size:13px; font-weight:700;}
   .rc-item .ri-sub{font-size:11px; color:var(--sub); font-weight:500; margin-top:2px;}
   .rc-item .ri-del{color:var(--sub); cursor:pointer; font-size:13px;}
+  .rc-item select{border:1px solid var(--border); border-radius:7px; font-size:11px; font-weight:700; padding:3px 4px; font-family:inherit; color:var(--text); background:#fff; cursor:pointer; flex-shrink:0;}
+  .rc-due-hint{font-size:11.5px; color:var(--sub); margin:-6px 2px 16px; line-height:1.5;}
+  .rc-item{cursor:pointer; transition:.12s;}
+  .rc-item .rc-grip{color:var(--sub); opacity:.45; cursor:grab; font-size:13px; letter-spacing:-3px; padding:0 4px 0 0; flex-shrink:0; user-select:none;}
+  .rc-item:hover .rc-grip{opacity:.9;}
+  .rc-item.dragging{opacity:.45;}
+  .rc-item.ins-before{box-shadow:inset 0 3px 0 var(--primary);}
+  .rc-item.ins-after{box-shadow:inset 0 -3px 0 var(--primary);}
+  .rc-item:hover{border-color:var(--primary);}
+  .rc-item.editing{border-color:var(--primary); background:var(--primary-light); box-shadow:0 0 0 1px var(--primary) inset;}
+  .rc-editbar{font-size:12px; color:var(--primary); background:var(--primary-light); border-radius:9px; padding:8px 11px; margin-bottom:10px; line-height:1.45;}
+  .rc-cancel{border:1px solid var(--border); background:#fff; color:var(--sub); border-radius:11px; padding:0 18px; font-weight:700; cursor:pointer; font-family:inherit; font-size:14px;}
   .rc-item .ri-del:hover{color:var(--high);}
 
   .weekdrop{position:fixed; top:50%; transform:translateY(-50%); z-index:95; display:none; align-items:center; justify-content:center; width:74px; height:170px; border-radius:16px; font-size:13px; font-weight:800; color:var(--primary); background:var(--primary-light); border:2px dashed var(--primary); text-align:center; padding:10px; line-height:1.5; box-shadow:var(--shadow);}
@@ -697,7 +754,7 @@
   /* Electron 미니 창 모드 */
   body.ft-mini{padding:8px;}
   body.ft-mini .topbar, body.ft-mini #weekView, body.ft-mini #monthView, body.ft-mini #projectView, body.ft-mini #widgetView,
-  body.ft-mini .footer, body.ft-mini .memo-panel, body.ft-mini .weekdrop, body.ft-mini .side-col,
+  body.ft-mini .footer, body.ft-mini .memo-panel, body.ft-mini .bl-panel, body.ft-mini .weekdrop, body.ft-mini .side-col,
   body.ft-mini .presets, body.ft-mini #statsText, body.ft-mini #resetBtn, body.ft-mini #modeText,
   body.ft-mini #miniChip{display:none !important;}
   body.ft-mini #timerView{display:block !important;}
@@ -756,8 +813,9 @@
       <button class="today-btn" id="ftPinBtn" title="항상 위에 고정">📌</button>
       <button class="today-btn" id="ftMiniBtn" title="미니 타이머 모드">◱</button>
       <button class="today-btn" id="recurToggle">🔁 반복</button>
+      <button class="today-btn" id="blToggle" title="지난 날에 남았거나 기한이 지난 할일 모아보기">📥 밀린 할일</button>
       <button class="today-btn" id="memoToggle">📝 메모</button>
-      <button class="today-btn" id="widgetToggle">🪟 위젯</button>
+      <button class="today-btn" id="widgetToggle" title="위젯 — 화면 왼쪽에 세로로 고정해서 계속 보며 할일 관리">🪟 위젯</button>
     </div>
   </div>
 
@@ -898,7 +956,7 @@
     <div class="widget-card">
       <div class="w-head">
         <div class="w-date" id="wgDate">—</div>
-        <button class="today-btn" id="wgExit">✕ 전체 화면</button>
+        <div class="w-head-btns"><button class="today-btn hidden" id="wgPin" title="다른 창 위에 항상 보이기 (켜기/끄기)">📌</button><button class="today-btn" id="wgExit" title="원래 창 크기·위치로 돌아가기">✕ 전체 화면</button></div>
       </div>
       <div class="wg-toolbar"><div class="wg-toggle" id="wgToggle"><button data-r="week">이번 주</button><button data-r="3day">3일</button></div></div>
       <div class="w-sub"><span id="wgProgLabel">이번 주 진행률</span><b id="wgPct">0%</b></div>
@@ -916,6 +974,15 @@
   </div>
 </div>
 
+<div id="blPanel" class="bl-panel">
+  <div class="memo-head"><div class="memo-title">📥 밀린 할일 <span class="bl-badge" id="blCount"></span></div><button class="close-x" id="blClose">✕</button></div>
+  <div class="bl-tools">
+    <button id="blAllToday">모두 오늘로</button>
+    <label class="bl-duechk" title="켜 두면, 기한이 이미 지났거나 옮긴 날보다 앞선 할일은 기한도 옮긴 날로 바뀌어요 (기한 없는 할일은 그대로)"><input type="checkbox" id="blDue"> 기한도 옮긴 날로</label>
+    <span class="bl-tip">요일 버튼을 누르거나, 이번 주 요일 칸으로 끌어다 놓으세요</span>
+  </div>
+  <div class="memo-body" id="blBody"></div>
+</div>
 <div id="dropPrevWeek" class="weekdrop left">‹<br>지난 주로</div>
 <div id="dropNextWeek" class="weekdrop right">다음 주로<br>›</div>
 
@@ -988,6 +1055,7 @@
   <div class="modal" style="max-width:440px">
     <div class="modal-head"><div class="modal-title">🔁 반복 업무</div><button class="close-x" id="rcClose">✕</button></div>
     <div class="modal-body">
+      <div id="rcEditBar" class="rc-editbar hidden"></div>
       <input type="text" class="edit-text" id="rcText" placeholder="반복할 업무 내용 (예: 센서 점검)">
       <div class="sec-label">분류</div>
       <div class="pick" id="rcCat"><button data-c="work" class="sel work">💼 업무</button><button data-c="personal">🏠 개인</button><button data-c="grad">🎓 대학원</button></div>
@@ -1009,7 +1077,11 @@
         <label style="font-size:12.5px; color:var(--sub); display:flex; align-items:center; gap:5px; white-space:nowrap; cursor:pointer;"><input type="checkbox" id="rcAlarm" checked> 📅 캘린더 알림</label>
       </div>
       <div style="font-size:11.5px; color:var(--sub); margin:-4px 0 12px; line-height:1.5;">시간을 넣으면 할일 앞에 시간이 붙어요. ☁️ 동기화를 켜두면 아이폰·맥 캘린더 구독으로 그 시간에 알림이 와요.</div>
-      <button id="rcAdd" class="btn-save" style="width:100%; padding:13px; border:none; border-radius:11px; font-weight:700; cursor:pointer; font-family:inherit; font-size:14px;">+ 반복 추가</button>
+      <div class="sec-label">기한 <small style="font-weight:500">(생기는 할일마다 자동으로 붙어요)</small></div>
+      <div class="pick" id="rcDue"><button data-due="none" class="on">없음</button><button data-due="0">당일</button><button data-due="n">며칠 뒤</button></div>
+      <div id="rcDueN" class="date-row hidden" style="align-items:center"><input type="number" min="1" max="365" id="rcDueDays" class="date-in" value="3" style="max-width:110px"><span class="time-tilde">일 뒤까지</span></div>
+      <div class="rc-due-hint" id="rcDueHint"></div>
+      <div style="display:flex; gap:8px;"><button id="rcCancel" class="rc-cancel hidden">취소</button><button id="rcAdd" class="btn-save" style="flex:1; padding:13px; border:none; border-radius:11px; font-weight:700; cursor:pointer; font-family:inherit; font-size:14px;">+ 반복 추가</button></div>
       <div class="sec-label" style="margin-top:22px;">등록된 반복 업무</div>
       <div id="rcList" class="rc-list"></div>
     </div>
@@ -1214,8 +1286,17 @@ let widgetMode=false; try{const w=localStorage.getItem('wp_widget'); widgetMode=
 let widgetRange='week'; try{const r=localStorage.getItem('wp_wrange'); if(r==='week'||r==='3day')widgetRange=r;}catch(e){}
 
 /* ===== D-day ===== */
-function dday(due){const t=new Date(); t.setHours(0,0,0,0); const d=new Date(due+'T00:00:00'); return Math.round((d-t)/86400000);}
-function ddayInfo(due){const n=dday(due); if(n<0) return {n,label:'D+'+(-n),cls:'over'}; if(n===0) return {n,label:'D-DAY',cls:'today'}; return {n,label:'D-'+n,cls:(n<=3?'soon':'far')};}
+/* base(YYYY-MM-DD)를 주면 오늘 대신 그 날짜 기준으로 셈 */
+function dday(due,base){const t=base?new Date(base+'T00:00:00'):new Date(); t.setHours(0,0,0,0); const d=new Date(due+'T00:00:00'); return Math.round((d-t)/86400000);}
+function ddayInfo(due,base){
+  const n=dday(due,base);
+  /* 아직 오지 않은 날의 반복 회차: 그 날 기준 남은 일수 (급하지 않으니 옅은 색) */
+  if(base) return {n,label:n<=0?'D-DAY':'D-'+n,cls:'far',ahead:true};
+  if(n<0) return {n,label:'D+'+(-n),cls:'over'}; if(n===0) return {n,label:'D-DAY',cls:'today'}; return {n,label:'D-'+n,cls:(n<=3?'soon':'far')};
+}
+/* 반복 업무의 미래 회차는 오늘이 아니라 그 회차 날짜 기준으로 D-day 표시
+   (오늘 기준이면 뒤쪽 날짜일수록 D-3, D-4, D-5… 처럼 숫자가 커져 보임) */
+function taskDday(t,ds){ if(!t.due)return null; return ddayInfo(t.due,(t.rid&&ds&&ds>fmt(new Date()))?ds:null); }
 
 /* ===== 할일 ===== */
 function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
@@ -1369,7 +1450,7 @@ function splitTime(text){
   return null;
 }
 function taskHTML(t,ds,drag,rank){
-  const c=t.category||'work'; const di=t.due?ddayInfo(t.due):null;
+  const c=t.category||'work'; const di=taskDday(t,ds);
   const tl=timeLabel(t);
   /* t.at 이 있으면 그걸 쓰고, 없으면 예전처럼 본문 앞의 시각 표기를 떼어 보여줌 */
   const sp=t.at?null:splitTime(t.text);
@@ -1383,7 +1464,7 @@ function taskHTML(t,ds,drag,rank){
     ${rank?`<div class="pri-rank${rank>3?' sub':''}" data-act="pri" style="${rank>3?`border-color:${PCOLOR[t.priority]};color:${PCOLOR[t.priority]}`:`background:${PCOLOR[t.priority]}`}" title="오늘 ${rank}순위 · 눌러서 중요도 변경">${rank}</div>`:`<div class="pri-dot" data-act="pri" style="background:${PCOLOR[t.priority]}" title="우선순위"></div>`}
     <div class="tmid" data-act="edit">
       <div class="txt">${txt}</div>
-      ${(t.project||di||schip)?`<div class="tmeta">${t.project?`<span class="prj-chip" style="background:${projColor(t.project)}22;color:${projColor(t.project)}">${esc(t.project)}</span>`:''}${di?`<span class="dchip ${di.cls}">${di.label}</span>`:''}${schip}</div>`:''}
+      ${(t.project||di||schip)?`<div class="tmeta">${t.project?`<span class="prj-chip" style="background:${projColor(t.project)}22;color:${projColor(t.project)}">${esc(t.project)}</span>`:''}${di?`<span class="dchip ${di.cls}" title="${di.ahead?`이 날 시작 기준 · 기한 ${+t.due.slice(5,7)}/${+t.due.slice(8)}`:`기한 ${+t.due.slice(5,7)}/${+t.due.slice(8)}`}">${di.label}</span>`:''}${schip}</div>`:''}
       ${subs.length?`<div class="subs">${subs.map(s=>`<div class="sub ${s.done?'done':''}" data-act="sub" data-sub="${s.id}"><span class="scheck"></span><span class="stxt">${esc(s.text)}</span></div>`).join('')}</div>`:''}
     </div>
     <div class="cat-icon" data-act="cat" title="업무/개인 전환">${(CAT[c]||CAT.work).icon}</div>
@@ -1410,8 +1491,7 @@ function renderWeek(){
   const dates=weekDates(); const last=addDays(curMonday,6); const wom=Math.ceil(curMonday.getDate()/7);
   document.getElementById('wTitle').textContent=`${curMonday.getFullYear()}년 ${curMonday.getMonth()+1}월 ${wom}주차`;
   document.getElementById('wRange').textContent=`${curMonday.getMonth()+1}/${curMonday.getDate()} ~ ${last.getMonth()+1}/${last.getDate()}`;
-  const oc=overdueCount();
-  document.getElementById('overduePill').innerHTML=oc>0?`<span class="od-pill">🚩 기한 지남 ${oc}</span>`:'';
+  renderBacklog();   /* 밀린 할일 알약 + 패널 갱신 (항상 '진짜 이번 주' 기준) */
 
   let total=0,done=0,ph=0,pm=0,pl=0,cw=0,cp=0,cg=0,over=0,soon=0;
   const grid=document.getElementById('weekGrid'); grid.innerHTML='';
@@ -1480,6 +1560,7 @@ function renderPeriodStrip(dates){
   const bars=[];
   for(const ds in data.tasks)for(const t of data.tasks[ds]){
     if(!t.due||t.due<=ds) continue;            /* 기한이 시작일보다 뒤인 것만 */
+    if(t.rid) continue;                        /* 반복 업무는 매 회차 막대가 생겨 지저분해서 제외 (할일에 D-칩은 그대로) */
     if(t.due<ws||ds>we) continue;              /* 이번 주와 겹치는 것만 */
     if(filterCat!=='all'&&(t.category||'work')!==filterCat) continue;
     bars.push({t,ds});
@@ -1521,6 +1602,7 @@ function renderMonth(){
     const bars=[];
     for(const ds in data.tasks)for(const t of data.tasks[ds]){
       if(!t.due||t.due<=ds) continue;
+      if(t.rid) continue;   /* 반복 업무는 기간 막대 없음 */
       if(t.due<ws||ds>we) continue;
       bars.push({t,ds});
     }
@@ -1580,11 +1662,10 @@ function renderWidget(){
   document.getElementById('wgBar').style.width=pct+'%';
   document.getElementById('wgProgLabel').textContent=(widgetRange==='3day'?'3일':'이번 주')+' 진행률';
   let html='';
-  const overdue=[];
-  for(const ds in data.tasks)for(const t of getTasks(ds)){ if(!t.done&&t.due&&dday(t.due)<0&&!rangeSet.has(ds)) overdue.push({t,ds}); }
-  overdue.sort((a,b)=>((a.t.due||'')<(b.t.due||'')?-1:1));
-  /* 기한 지난 할일도 끌어서 오늘 쪽으로 옮길 수 있게 drag 허용 */
-  if(overdue.length) html+=`<div class="w-sec over"><div class="w-sec-title">🚩 기한 지남<span class="badge">${overdue.length}</span></div><div class="w-list">${overdue.map(o=>taskHTML(o.t,o.ds,true)).join('')}</div></div>`;
+  /* 밀린 할일(지난 날 미완료 + 기한 지남): 어느 날짜에 있는지 표시, 끌어서 아래 요일로 옮기거나 한 번에 오늘로 */
+  window._wgRangeSet=rangeSet;
+  const overdue=backlogItems(rangeSet);
+  if(overdue.length) html+=`<div class="w-sec over"><div class="w-sec-title">📥 밀린 할일<span class="badge">${overdue.length}</span><button class="bl-mini" data-blall="1">모두 오늘로</button></div><div class="w-list">${overdue.map(o=>`<div class="bl-wfrom">📅 ${dayLabel(o.ds)}에 있음</div>`+taskHTML(o.t,o.ds,true)).join('')}</div></div>`;
   days.forEach(d=>{
     const ds=fmt(d); const tasks=sortTasks(getTasks(ds),ds); const td2=tasks.filter(x=>x.done).length;
     const isToday=ds===todayStr, wd=d.getDay(), weekend=(wd===0||wd===6);
@@ -1619,7 +1700,42 @@ function updateViews(){
   document.getElementById('projectView').classList.toggle('hidden',widgetMode||currentView!=='project');
   if(!widgetMode&&currentView==='project')renderPj();
 }
-function setWidget(on){widgetMode=on; try{localStorage.setItem('wp_widget',on?'1':'0');}catch(e){} updateViews(); if(on)renderWidget();}
+function setWidget(on){widgetMode=on; try{localStorage.setItem('wp_widget',on?'1':'0');}catch(e){} updateViews(); if(on)renderWidget(); applyDock(on);}
+
+/* ===== 위젯 도킹 (Electron 전용): 화면 왼쪽 끝에 세로로 고정 =====
+   폭은 사용자가 창 가장자리를 끌어 바꾸면 기억(wp_dock_w), 항상 위는 📌로 켜고 끔(wp_dock_pin, 기본 켜짐).
+   브라우저에선 electronAPI 가 없어 예전처럼 화면 안에서만 위젯으로 바뀜 */
+const HAS_DOCK=!!(window.electronAPI&&window.electronAPI.setDock);
+function dockPinned(){try{return localStorage.getItem('wp_dock_pin')!=='0';}catch(e){return true;}}
+function dockWidth(){try{const w=+localStorage.getItem('wp_dock_w'); return w>=300&&w<=1200?w:380;}catch(e){return 380;}}
+function renderDockPin(){
+  const b=document.getElementById('wgPin'); if(!b)return;
+  b.classList.toggle('hidden',!HAS_DOCK);
+  const on=dockPinned();
+  b.style.background=on?'var(--primary-light)':''; b.style.color=on?'var(--primary)':'';
+  b.title=on?'항상 위에 보이는 중 — 눌러서 끄기':'다른 창 위에 항상 보이기 (지금 꺼짐)';
+}
+function applyDock(on){
+  document.body.classList.toggle('docked',on&&HAS_DOCK);
+  renderDockPin();
+  if(!HAS_DOCK)return;
+  /* 풀 때는 타이머 쪽 📌(항상 위) 설정으로 되돌림 */
+  const basePin=(typeof ftSettings!=='undefined'&&!!ftSettings.pinned);
+  window.electronAPI.setDock(on, dockWidth(), on?dockPinned():basePin);
+}
+let _dockW=null;
+window.addEventListener('resize',()=>{
+  if(!widgetMode||!HAS_DOCK)return;
+  clearTimeout(_dockW);
+  _dockW=setTimeout(()=>{const w=window.outerWidth; if(w>=300&&w<=1200){try{localStorage.setItem('wp_dock_w',String(w));}catch(e){}}},400);
+});
+document.getElementById('wgPin').addEventListener('click',()=>{
+  const on=!dockPinned();
+  try{localStorage.setItem('wp_dock_pin',on?'1':'0');}catch(e){}
+  if(HAS_DOCK) window.electronAPI.setAlwaysOnTop(on);
+  renderDockPin();
+  toast(on?'📌 다른 창 위에 항상 보여요':'📌 고정 해제 — 다른 창 뒤로 갈 수 있어요');
+});
 
 /* ===== 하루 모달 ===== */
 let modalDS=null, modalPri='mid', modalCat='work';
@@ -1797,6 +1913,7 @@ _wg.addEventListener('dragover',e=>{const col=e.target.closest('.day-col'); if(!
 _wg.addEventListener('drop',e=>{const col=e.target.closest('.day-col'); if(!col)return; e.preventDefault();
   const a=dropAnchor(e); clearDragUI();
   try{const d=JSON.parse(e.dataTransfer.getData('text/plain'));
+    blDropFix(d,col.dataset.ds);
     moveTaskTo(d.ds,d.id,col.dataset.ds,a?{id:a.id,before:a.before}:null);
   }catch(err){}});
 document.getElementById('dmTasks').addEventListener('click',taskClick);
@@ -1811,7 +1928,8 @@ _wb.addEventListener('keydown',e=>{
     setTimeout(()=>{const inp=_wb.querySelector(`.add-input[data-ds="${ds}"]`); if(inp)inp.focus();},0);
   }});
 _wb.addEventListener('dragstart',e=>{const t=e.target.closest('.task'); if(t&&t.dataset.id){
-  e.dataTransfer.setData('text/plain',JSON.stringify({ds:t.dataset.ds,id:t.dataset.id}));
+  /* 위젯의 밀린 할일 칸에서 끌어온 것이면 bl:1 → 놓을 때 기한도 조정 */
+  e.dataTransfer.setData('text/plain',JSON.stringify({ds:t.dataset.ds,id:t.dataset.id,bl:t.closest('.w-sec.over')?1:0}));
   e.dataTransfer.effectAllowed='move'; t.classList.add('dragging'); document.body.classList.add('dragging-task');}});
 _wb.addEventListener('dragend',clearDragUI);
 _wb.addEventListener('dragover',e=>{const day=e.target.closest('.wg-day'); if(!day)return;
@@ -1824,6 +1942,7 @@ _wb.addEventListener('dragover',e=>{const day=e.target.closest('.wg-day'); if(!d
 _wb.addEventListener('drop',e=>{const day=e.target.closest('.wg-day'); if(!day)return; e.preventDefault();
   const a=dropAnchor(e); clearDragUI();
   try{const d=JSON.parse(e.dataTransfer.getData('text/plain'));
+    blDropFix(d,day.dataset.ds);
     moveTaskTo(d.ds,d.id,day.dataset.ds,a?{id:a.id,before:a.before}:null);
   }catch(err){}});
 _wg.addEventListener('keydown',e=>{
@@ -2550,6 +2669,113 @@ document.getElementById('memoNotes').addEventListener('click',e=>{
 });
 document.body.classList.toggle('memo-open',memoOpen);
 
+/* ===== 밀린 할일 (지난 날에 남은 미완료 + 기한 지남) → 이번 주로 끌어오기 ===== */
+function weekSetOf(d){const m=getMonday(d); return new Set(Array.from({length:7},(_,i)=>fmt(addDays(m,i))));}
+function dayLabel(ds){const d=new Date(ds+'T00:00:00'); return `${d.getMonth()+1}/${d.getDate()}(${DAYS[(d.getDay()+6)%7]})`;}
+/* exclude(지금 화면에 보이는 날짜)는 이미 보이니 뺌.
+   반복 업무의 지난 회차는 다음 회차가 이미 만들어져 있어서, 기한이 없으면 목록에 넣지 않음 */
+function backlogItems(exclude){
+  const td=fmt(new Date()), out=[], recurLatest={};
+  for(const ds in data.tasks) for(const t of data.tasks[ds]){
+    if(t.done||exclude.has(ds))continue;
+    const over=!!(t.due&&t.due<td);
+    /* 기한이 오늘 이후로 남아 있으면 '진행 중'인 일(기간 할일) — 시작일이 지났어도 밀린 게 아님.
+       (이걸 빼먹어서 9/3~10/28 기간 할일이 오늘로 끌려와 막대가 줄어든 적이 있음) */
+    if(t.due&&!over)continue;
+    if(!over&&(ds>=td||t.rid))continue;
+    /* 기한 있는 반복 업무가 밀리면 규칙마다 가장 최근 회차 하나만 (매일 반복이 목록을 덮지 않게) */
+    if(t.rid){ const p=recurLatest[t.rid]; if(!p||ds>p.ds) recurLatest[t.rid]={t:{category:'work',...t},ds,over}; continue; }
+    out.push({t:{category:'work',...t},ds,over});
+  }
+  for(const k in recurLatest) out.push(recurLatest[k]);
+  /* 기한 지남 먼저(기한 오래된 순), 그다음 지난 날 미완료(최근 날짜 순) */
+  out.sort((a,b)=>a.over!==b.over?(a.over?-1:1)
+    :a.over?(a.t.due<b.t.due?-1:a.t.due>b.t.due?1:0)
+    :(a.ds>b.ds?-1:a.ds<b.ds?1:0));
+  return out;
+}
+function setBacklog(on){
+  document.body.classList.toggle('bl-open',on);
+  try{localStorage.setItem('wp_backlog',on?'1':'0');}catch(e){}
+  renderBacklog();
+}
+function renderBacklog(){
+  const items=backlogItems(weekSetOf(new Date()));
+  const nOver=items.filter(x=>x.over).length;
+  const pill=document.getElementById('overduePill');
+  if(pill) pill.innerHTML=items.length?`<button class="od-pill" data-blopen="1" title="눌러서 어디에 있는지 보고 이번 주로 가져오기">📥 밀린 할일 ${items.length}${nOver?` · 🚩기한 지남 ${nOver}`:''}</button>`:'';
+  const tb=document.getElementById('blToggle'); if(tb) tb.innerHTML='📥 밀린 할일'+(items.length?` <b class="bl-badge">${items.length}</b>`:'');
+  const cnt=document.getElementById('blCount'); if(cnt) cnt.textContent=items.length||'';
+  const box=document.getElementById('blBody'); if(!box||!document.body.classList.contains('bl-open'))return;
+  document.getElementById('blAllToday').disabled=!items.length;
+  if(!items.length){box.innerHTML='<div class="empty">🎉 밀린 할일이 없어요</div>'; return;}
+  const td=fmt(new Date()), wk=[...weekSetOf(new Date())];
+  let html='', last='';
+  items.forEach(o=>{
+    const t=o.t, tl=timeLabel(t), di=t.due?ddayInfo(t.due):null;
+    const mon=getMonday(new Date(o.ds+'T00:00:00'));
+    const g=o.over?'🚩 기한 지남':`📅 ${mon.getMonth()+1}/${mon.getDate()} 주에 남은 일`;
+    if(g!==last){ html+=`<div class="bl-group ${o.over?'over':''}">${g}</div>`; last=g; }
+    html+=`<div class="bl-item ${o.over?'over':''}" draggable="true" data-ds="${o.ds}" data-id="${t.id}">
+      <div class="bl-chk" data-bl="done" title="완료 처리"></div>
+      <div class="bl-main">
+        <div class="bl-txt">${tl?`<span class="task-time">${esc(tl)}</span> `:''}${esc(taskBody(t))}</div>
+        <div class="bl-meta"><span class="bl-from" title="지금 이 날짜에 들어 있어요">📅 ${dayLabel(o.ds)}에 있음</span>${di?`<span class="dchip ${di.cls}">기한 ${+t.due.slice(5,7)}/${+t.due.slice(8)} ${di.label}</span>`:''}${t.project?`<span class="prj-chip" style="background:${projColor(t.project)}22;color:${projColor(t.project)}">${esc(t.project)}</span>`:''}</div>
+        <div class="bl-days" data-bl="days">${wk.map((ds,i)=>`<button data-bl="to" data-to="${ds}"${ds<td?' disabled':''} class="${ds===td?'today':''}" title="${dayLabel(ds)}로 옮기기${blDueOn()&&t.due&&t.due<ds?' · 기한 → '+mdOf(ds):''}">${ds===td?'오늘':DAYS[i]}</button>`).join('')}</div>
+      </div>
+    </div>`;
+  });
+  box.innerHTML=html;
+}
+/* "기한도 옮긴 날로" (기본 켜짐, 기기별 설정) */
+function blDueOn(){try{return localStorage.getItem('wp_bl_due')!=='0';}catch(e){return true;}}
+/* 옮긴 날 기준으로 이미 지난 기한만 그 날로 당겨옴. 기한 없는 일·아직 여유 있는 기한은 손대지 않음 */
+function blDueFix(t,tgt){ if(!blDueOn()||!t||!t.due||t.due>=tgt)return false; t.due=tgt; return true; }
+function mdOf(ds){return `${+ds.slice(5,7)}/${+ds.slice(8)}`;}
+/* 한 개 옮기기 → 이번 주를 보고 있지 않으면 이번 주로 화면 이동 */
+function blMove(src,id,tgt){
+  const m=getMonday(new Date());
+  if(fmt(curMonday)!==fmt(m)) curMonday=m;
+  const fixed=blDueFix(findTask(src,id),tgt);   /* moveTaskTo 가 저장하기 전에 바꿔 둠 */
+  moveTaskTo(src,id,tgt,null);          /* save + renderAll */
+  toast('📥 '+dayLabel(tgt)+'로 가져왔어요'+(fixed?' · 기한 → '+mdOf(tgt):''));
+}
+function blAllToday(exclude){
+  const items=backlogItems(exclude||weekSetOf(new Date())); if(!items.length)return;
+  const td=fmt(new Date());
+  const nFix=blDueOn()?items.filter(o=>o.t.due&&o.t.due<td).length:0;
+  confirmBox('밀린 할일 모두 오늘로',`밀린 할일 ${items.length}개를 모두 오늘 ${dayLabel(td)}로 옮길까요?`+(nFix?`\n기한이 지난 ${nFix}개는 기한도 오늘로 바뀌어요.`:''),()=>{
+    if(!data.tasks[td])data.tasks[td]=[];
+    items.forEach(o=>{const arr=rawTasks(o.ds); const i=arr.findIndex(x=>x.id===o.t.id); if(i>=0){const t=arr.splice(i,1)[0]; blDueFix(t,td); data.tasks[td].push(t);}});
+    curMonday=getMonday(new Date());
+    save(); renderAll(); toast('📥 '+items.length+'개를 오늘로 가져왔어요'+(nFix?' · 기한 '+nFix+'개도 오늘로':''));
+  });
+}
+/* 요일 칸에 끌어다 놓은 게 밀린 할일(bl:1)이면 이동 전에 기한 조정 */
+function blDropFix(d,tgt){ if(!d||!d.bl)return; if(blDueFix(findTask(d.ds,d.id),tgt)) setTimeout(()=>toast('📥 옮기면서 기한 → '+mdOf(tgt)),0); }
+(function(){ const c=document.getElementById('blDue'); if(!c)return; c.checked=blDueOn();
+  c.addEventListener('change',()=>{ try{localStorage.setItem('wp_bl_due',c.checked?'1':'0');}catch(e){} renderBacklog(); }); })();
+document.getElementById('blToggle').onclick=()=>setBacklog(!document.body.classList.contains('bl-open'));
+document.getElementById('blClose').onclick=()=>setBacklog(false);
+document.getElementById('blAllToday').onclick=()=>blAllToday();
+document.getElementById('overduePill').addEventListener('click',e=>{if(e.target.closest('[data-blopen]'))setBacklog(true);});
+_wb.addEventListener('click',e=>{if(e.target.closest('[data-blall]'))blAllToday(window._wgRangeSet);});
+const _bl=document.getElementById('blBody');
+_bl.addEventListener('click',e=>{
+  const it=e.target.closest('.bl-item'); if(!it)return;
+  const ds=it.dataset.ds, id=it.dataset.id, b=e.target.closest('[data-bl]');
+  if(b&&b.dataset.bl==='to'){ if(!b.disabled)blMove(ds,id,b.dataset.to); return; }
+  if(b&&b.dataset.bl==='done'){ toggleTask(ds,id); return; }
+  if(b&&b.dataset.bl==='days')return;   /* 요일 버튼 사이 빈틈 */
+  openEdit(ds,id);                         /* 나머지 어디를 눌러도 수정 */
+});
+_bl.addEventListener('dragstart',e=>{const it=e.target.closest('.bl-item'); if(!it)return;
+  e.dataTransfer.setData('text/plain',JSON.stringify({ds:it.dataset.ds,id:it.dataset.id,bl:1}));
+  e.dataTransfer.effectAllowed='move'; it.classList.add('dragging'); document.body.classList.add('dragging-task');});
+_bl.addEventListener('dragend',clearDragUI);
+try{ if(localStorage.getItem('wp_backlog')==='1') document.body.classList.add('bl-open'); }catch(e){}
+renderBacklog();
+
 /* ===== 반복 업무 ===== */
 if(!Array.isArray(data.recur)) data.recur=[];
 let rcCat='work', rcPri='mid', rcFreq='weekly';
@@ -2570,8 +2796,7 @@ function generateRecurring(){
       if(matchRule(r,d)){
         const ds=fmt(d);
         if(!data.tasks[ds]) data.tasks[ds]=[];
-        if(!data.tasks[ds].some(t=>t.rid===r.id))
-          {const nt={id:uid(),text:r.text,priority:r.priority||'mid',category:r.category||'work',done:false,rid:r.id}; if(r.time){nt.at=r.time; if(r.end) nt.end=r.end; if(r.alarm===false) nt.alarm=false;} data.tasks[ds].push(nt);} /* 시간은 at/end 필드로 (하루 시간표와 연동) */
+        if(!data.tasks[ds].some(t=>t.rid===r.id)) data.tasks[ds].push(rcMakeInst(r,d));
       }
     }
     r.lastGen=fmt(end);
@@ -2593,31 +2818,176 @@ function describeRule(r){
   else if(r.freq==='weekly') s='매주 '+(r.weekdays||[]).slice().sort((a,b)=>a-b).map(i=>DAYS[i]).join('·');
   else s='매달 '+r.monthday+'일';
   if(r.time) s+=' · ⏰ '+r.time+(r.end?'~'+r.end:'')+(r.alarm===false?'':' 📅');
+  if(r.dueOffset!=null) s+=' · 기한 '+(r.dueOffset===0?'당일':r.dueOffset+'일 뒤');
   return (CAT[r.category]||CAT.work).icon+' '+s;
+}
+/* 반복 규칙의 기한 = 할일이 생긴 날로부터 dueOffset 일 뒤 (0 = 당일, 없으면 기한 없음) */
+let rcDueMode='none';
+function rcDueOptions(cur){
+  const list=[['','기한 없음'],['0','당일']].concat([1,2,3,4,5,6,7,10,14].map(n=>[String(n),n+'일 뒤']));
+  if(cur!=null&&!list.some(o=>o[0]===String(cur))) list.push([String(cur),cur+'일 뒤']);
+  return list.map(([v,l])=>`<option value="${v}"${String(cur??'')===v?' selected':''}>${l}</option>`).join('');
 }
 function renderRecurList(){
   const box=document.getElementById('rcList');
   if(!data.recur.length){box.innerHTML='<div class="empty">등록된 반복 업무가 없어요</div>'; return;}
   box.innerHTML=data.recur.map(r=>`
-    <div class="rc-item" data-id="${r.id}">
-      <div style="flex:1"><div class="ri-txt">${esc(r.text)}</div><div class="ri-sub">${describeRule(r)}</div></div>
+    <div class="rc-item${r.id===rcEditId?' editing':''}" data-id="${r.id}" draggable="true" title="눌러서 수정 · 끌어서 순서 바꾸기">
+      <span class="rc-grip" title="끌어서 순서 바꾸기">⋮⋮</span>
+      <div style="flex:1; min-width:0"><div class="ri-txt">${esc(r.text)}</div><div class="ri-sub">${describeRule(r)}</div></div>
+      <select data-act="rdue" title="기한 바꾸기 — 이미 만들어진 앞으로의 할일에도 바로 적용돼요">${rcDueOptions(r.dueOffset)}</select>
       <div class="ri-del" data-act="rdel">✕</div>
     </div>`).join('');
+}
+function rcDueDaysVal(){return parseInt(document.getElementById('rcDueDays').value,10);}
+function rcDueHint(){
+  const el=document.getElementById('rcDueHint'); if(!el)return;
+  document.getElementById('rcDueN').classList.toggle('hidden',rcDueMode!=='n');
+  if(rcDueMode==='none'){el.textContent='생기는 할일에 기한을 붙이지 않아요'; return;}
+  const n=rcDueMode==='0'?0:Math.max(1,rcDueDaysVal()||1);
+  let ex;
+  if(rcFreq==='weekly'&&rcWeekSet.size) ex=[...rcWeekSet].sort((a,b)=>a-b).map(w=>`${DAYS[w]} → ${n>=7?'+'+Math.floor(n/7)+'주 ':''}${DAYS[(w+n)%7]}`).join(', ');
+  else if(rcFreq==='monthly') ex=`${rcMonthday}일에 생긴 할일 → ${n===0?'그날':n+'일 뒤'}`;
+  else ex=`오늘 생긴 할일 → ${dayLabel(fmt(addDays(new Date(),n)))}`;
+  el.textContent=(n===0?'할일이 생긴 날이 기한이에요':`할일이 생긴 날로부터 ${n}일 뒤가 기한이에요`)+' · 예) '+ex;
+}
+/* 이미 만들어진 오늘 이후의 미완료 회차에 기한 변경 반영.
+   예전 규칙으로 붙은 기한(또는 기한 없음)인 것만 바꾸고, 직접 고친 기한은 그대로 둠 */
+function rcApplyDue(r,oldOff){
+  const td=fmt(new Date()); let n=0;
+  for(const ds in data.tasks){ if(ds<td)continue;
+    for(const t of data.tasks[ds]){
+      if(t.rid!==r.id||t.done)continue;
+      const d=new Date(ds+'T00:00:00');
+      const oldDue=oldOff==null?null:fmt(addDays(d,oldOff));
+      if(t.due&&t.due!==oldDue)continue;
+      if(r.dueOffset==null){ if(!t.due)continue; delete t.due; }
+      else { const nd=fmt(addDays(d,r.dueOffset)); if(t.due===nd)continue; t.due=nd; }
+      n++;
+    }
+  }
+  return n;
 }
 function updateRecurSub(){
   document.getElementById('rcWeek').classList.toggle('hidden',rcFreq!=='weekly');
   document.getElementById('rcMonth').classList.toggle('hidden',rcFreq!=='monthly');
 }
-function openRecur(){
-  rcCat='work'; rcPri='mid'; rcFreq='weekly'; rcWeekSet.clear(); rcMonthday=new Date().getDate();
+/* 반복 규칙 한 회차 만들기 (생긴 날 + dueOffset = 기한) */
+function rcMakeInst(r,d){
+  const t={id:uid(),text:r.text,priority:r.priority||'mid',category:r.category||'work',done:false,rid:r.id};
+  if(r.time){ t.at=r.time; if(r.end) t.end=r.end; if(r.alarm===false) t.alarm=false; }   /* 시간은 at/end 필드로 (하루 시간표·캘린더 알림 연동) */
+  if(r.dueOffset!=null) t.due=fmt(addDays(d,r.dueOffset));
+  return t;
+}
+/* ===== 반복 규칙 추가 / 수정 폼 ===== */
+let rcEditId=null;
+function rcResetForm(){
+  rcEditId=null;
+  rcCat='work'; rcPri='mid'; rcFreq='weekly'; rcWeekSet.clear(); rcMonthday=new Date().getDate(); rcDueMode='none';
   document.getElementById('rcText').value='';
   document.getElementById('rcTime').value=''; document.getElementById('rcAlarm').checked=true;
+  document.getElementById('rcDueDays').value=3;
+  rcSyncForm();
+}
+/* 상태값 → 화면 */
+function rcSyncForm(){
   setPick('rcCat','c',rcCat); setPick('rcPri','p',rcPri);
   document.querySelectorAll('#rcFreq button').forEach(b=>b.classList.toggle('on',b.dataset.f===rcFreq));
-  document.querySelectorAll('#rcWeekdays button').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('#rcWeekdays button').forEach(b=>b.classList.toggle('on',rcWeekSet.has(+b.dataset.d)));
   document.getElementById('rcMonthday').value=rcMonthday;
-  updateRecurSub(); renderRecurList();
-  document.getElementById('recurOverlay').classList.add('show');
+  document.querySelectorAll('#rcDue button').forEach(b=>b.classList.toggle('on',b.dataset.due===rcDueMode));
+  const r=rcEditId&&data.recur.find(x=>x.id===rcEditId);
+  const bar=document.getElementById('rcEditBar');
+  bar.classList.toggle('hidden',!r); if(r) bar.innerHTML=`✏️ <b>${esc(r.text)}</b> 수정 중 — 바꾼 뒤 저장을 누르세요`;
+  document.getElementById('rcAdd').textContent=r?'💾 수정 저장':'+ 반복 추가';
+  document.getElementById('rcCancel').classList.toggle('hidden',!r);
+  updateRecurSub(); rcDueHint(); renderRecurList();
+}
+function openRecur(){ rcResetForm(); document.getElementById('recurOverlay').classList.add('show'); }
+function rcEditStart(id){
+  const r=data.recur.find(x=>x.id===id); if(!r)return;
+  rcEditId=id; rcCat=r.category||'work'; rcPri=r.priority||'mid'; rcFreq=r.freq;
+  rcWeekSet.clear(); (r.weekdays||[]).forEach(w=>rcWeekSet.add(w));
+  rcMonthday=r.monthday||new Date().getDate();
+  if(r.dueOffset==null) rcDueMode='none';
+  else if(r.dueOffset===0) rcDueMode='0';
+  else { rcDueMode='n'; document.getElementById('rcDueDays').value=r.dueOffset; }
+  document.getElementById('rcText').value=r.text;
+  document.getElementById('rcTime').value=r.time||'';
+  document.getElementById('rcAlarm').checked=r.alarm!==false;
+  rcSyncForm();
+  document.querySelector('#recurOverlay .modal-body').scrollTop=0;
+  const i=document.getElementById('rcText'); i.focus(); i.setSelectionRange(i.value.length,i.value.length);
+}
+function rcReadForm(){
+  const text=document.getElementById('rcText').value.trim();
+  if(!text){alert('반복할 업무 내용을 입력하세요'); return null;}
+  if(rcFreq==='weekly'&&rcWeekSet.size===0){alert('요일을 하나 이상 선택하세요'); return null;}
+  const f={text,category:rcCat,priority:rcPri,freq:rcFreq};
+  if(rcFreq==='weekly') f.weekdays=[...rcWeekSet].sort((a,b)=>a-b);
+  if(rcFreq==='monthly') f.monthday=rcMonthday;
+  /* 시간·캘린더 알림: 시간 칸이 우선, 비어 있으면 제목 앞의 "22:30 …" 도 시간으로 인식 */
+  const time=document.getElementById('rcTime').value, alarm=document.getElementById('rcAlarm').checked;
+  if(/^\d{2}:\d{2}$/.test(time)){ f.time=time; f.alarm=alarm; }
+  normalizeRule(f);
+  if(f.time&&!/^\d{2}:\d{2}$/.test(time)) f.alarm=alarm;
+  if(rcDueMode==='0') f.dueOffset=0;
+  else if(rcDueMode==='n'){ const n=rcDueDaysVal(); if(!(n>=1&&n<=365)){alert('기한은 1~365일 뒤 사이로 입력하세요'); return null;} f.dueOffset=n; }
+  return f;
+}
+/* 규칙 수정 → 이미 만들어진 오늘 이후의 미완료 회차에 반영.
+   회차마다 직접 고친 내용·분류·중요도·기한은 그대로 두고, 규칙 값 그대로인 것만 바꿈.
+   주기가 바뀌면 더 이상 안 맞는 날의 미완료 회차는 지우고, 새로 맞는 날엔 회차를 만듦 */
+function rcSaveEdit(r,f){
+  const old={text:r.text, category:r.category||'work', priority:r.priority||'mid', freq:r.freq,
+    weekdays:(r.weekdays||[]).slice().sort((a,b)=>a-b).join(), monthday:r.monthday, dueOffset:r.dueOffset??null,
+    time:r.time||null, end:r.end||null, alarm:r.alarm!==false};
+  r.text=f.text; r.category=f.category; r.priority=f.priority; r.freq=f.freq;
+  delete r.weekdays; delete r.monthday; delete r.dueOffset; delete r.time; delete r.end; delete r.alarm;
+  if(f.weekdays) r.weekdays=f.weekdays;
+  if(f.monthday!=null) r.monthday=f.monthday;
+  if(f.dueOffset!=null) r.dueOffset=f.dueOffset;
+  /* 시간: 수정 폼엔 종료 시간 칸이 없으니, 시작 시간이 그대로면 기존 종료 시간도 유지 */
+  if(f.time){ r.time=f.time; const e=f.end||(f.time===old.time?old.end:null); if(e) r.end=e; r.alarm=f.alarm!==false; }
+  const timeChanged=(r.time||null)!==old.time||(r.end||null)!==old.end, alarmChanged=(r.alarm!==false)!==old.alarm;
+  const sched=old.freq!==r.freq||(r.freq==='weekly'&&old.weekdays!==r.weekdays.join())||(r.freq==='monthly'&&old.monthday!==r.monthday);
+  const td=fmt(new Date()), touched=new Set(); let added=0, removed=0;
+  for(const ds in data.tasks){ if(ds<td)continue;
+    for(const t of data.tasks[ds]){ if(t.rid!==r.id||t.done)continue;
+      if(t.text===old.text&&old.text!==r.text){t.text=r.text; touched.add(t.id);}
+      if((t.category||'work')===old.category&&old.category!==r.category){t.category=r.category; touched.add(t.id);}
+      if((t.priority||'mid')===old.priority&&old.priority!==r.priority){t.priority=r.priority; touched.add(t.id);}
+      /* 규칙의 옛 시간 그대로인 회차만 새 시간으로 (직접 고친 시간은 유지) */
+      if(timeChanged&&(t.at||null)===old.time&&(t.end||null)===old.end){
+        delete t.at; delete t.end;
+        if(r.time){ t.at=r.time; if(r.end) t.end=r.end; }
+        touched.add(t.id);
+      }
+      if(alarmChanged&&(t.alarm!==false)===old.alarm){ if(r.alarm===false) t.alarm=false; else delete t.alarm; touched.add(t.id); }
+    }
+  }
+  if(sched){
+    for(const ds in data.tasks){ if(ds<td)continue;
+      const n0=data.tasks[ds].length;
+      data.tasks[ds]=data.tasks[ds].filter(t=>!(t.rid===r.id&&!t.done&&!matchRule(r,new Date(ds+'T00:00:00'))));
+      removed+=n0-data.tasks[ds].length;
+    }
+    const start=new Date(); start.setHours(0,0,0,0);
+    const end=r.lastGen?new Date(r.lastGen+'T00:00:00'):addDays(start,120);
+    for(let d=new Date(start); d<=end; d=addDays(d,1)){
+      if(!matchRule(r,d))continue;
+      const ds=fmt(d); if(!data.tasks[ds]) data.tasks[ds]=[];
+      if(!data.tasks[ds].some(t=>t.rid===r.id)){ data.tasks[ds].push(rcMakeInst(r,d)); added++; }
+    }
+  }
+  const dueN=rcApplyDue(r,old.dueOffset);
+  save(); renderAll();
+  const parts=[];
+  if(touched.size) parts.push(`내용 ${touched.size}개`);
+  if(removed) parts.push(`빠진 날 ${removed}개 삭제`);
+  if(added) parts.push(`새 날 ${added}개 추가`);
+  if(dueN) parts.push(`기한 ${dueN}개`);
+  toast('🔁 반복 업무를 수정했어요'+(parts.length?' · '+parts.join(' · '):''));
 }
 document.getElementById('recurToggle').onclick=openRecur;
 document.getElementById('rcClose').onclick=()=>document.getElementById('recurOverlay').classList.remove('show');
@@ -2628,27 +2998,78 @@ document.getElementById('rcFreq').addEventListener('click',e=>{const b=e.target.
 document.getElementById('rcWeekdays').addEventListener('click',e=>{const b=e.target.closest('button'); if(b){const d=+b.dataset.d; if(rcWeekSet.has(d)){rcWeekSet.delete(d); b.classList.remove('on');}else{rcWeekSet.add(d); b.classList.add('on');}}});
 document.getElementById('rcMonthday').addEventListener('change',e=>{rcMonthday=+e.target.value;});
 document.getElementById('rcAdd').onclick=()=>{
-  const text=document.getElementById('rcText').value.trim();
-  if(!text){alert('반복할 업무 내용을 입력하세요'); return;}
-  if(rcFreq==='weekly'&&rcWeekSet.size===0){alert('요일을 하나 이상 선택하세요'); return;}
-  const rule={id:'r'+uid(),text,category:rcCat,priority:rcPri,freq:rcFreq};
-  const time=document.getElementById('rcTime').value;
-  if(/^\d{2}:\d{2}$/.test(time)){rule.time=time; rule.alarm=document.getElementById('rcAlarm').checked;}
-  normalizeRule(rule); /* 제목에 "22:30 …" 처럼 적어도 시간으로 인식 */
-  if(rule.time&&!/^\d{2}:\d{2}$/.test(time)) rule.alarm=document.getElementById('rcAlarm').checked;
-  if(rcFreq==='weekly') rule.weekdays=[...rcWeekSet];
-  if(rcFreq==='monthly') rule.monthday=rcMonthday;
-  data.recur.push(rule);
-  generateRecurring(); renderAll(); renderRecurList();
-  document.getElementById('rcText').value=''; rcWeekSet.clear();
-  document.querySelectorAll('#rcWeekdays button').forEach(b=>b.classList.remove('on'));
+  const f=rcReadForm(); if(!f)return;
+  if(rcEditId){ const r=data.recur.find(x=>x.id===rcEditId); if(r) rcSaveEdit(r,f); rcResetForm(); return; }
+  data.recur.push(Object.assign({id:'r'+uid()},f));
+  generateRecurring(); renderAll();
+  /* 분류·주기·기한은 그대로 두고 다음 것을 이어서 입력할 수 있게 내용·요일만 비움 */
+  document.getElementById('rcText').value=''; rcWeekSet.clear(); rcSyncForm();
 };
+document.getElementById('rcCancel').onclick=rcResetForm;
+/* 목록 드래그로 순서 바꾸기 (data.recur 배열 순서 = 목록 순서) */
+let rcDragId=null;
+const _rl=document.getElementById('rcList');
+function rcClearDrag(){ _rl.querySelectorAll('.dragging,.ins-before,.ins-after').forEach(x=>x.classList.remove('dragging','ins-before','ins-after')); }
+function rcDropPos(e,it){ const r=it.getBoundingClientRect(); return e.clientY<r.top+r.height/2; }
+_rl.addEventListener('dragstart',e=>{
+  const it=e.target.closest('.rc-item'); if(!it||e.target.closest('select'))return;
+  rcDragId=it.dataset.id; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/rc',rcDragId);
+  it.classList.add('dragging');
+});
+_rl.addEventListener('dragover',e=>{
+  if(!rcDragId)return; e.preventDefault(); e.dataTransfer.dropEffect='move';
+  const it=e.target.closest('.rc-item');
+  _rl.querySelectorAll('.ins-before,.ins-after').forEach(x=>{if(x!==it)x.classList.remove('ins-before','ins-after');});
+  if(!it||it.dataset.id===rcDragId)return;
+  const before=rcDropPos(e,it); it.classList.toggle('ins-before',before); it.classList.toggle('ins-after',!before);
+});
+_rl.addEventListener('drop',e=>{
+  if(!rcDragId)return; e.preventDefault();
+  const src=rcDragId; rcDragId=null;
+  const it=e.target.closest('.rc-item');
+  const i=data.recur.findIndex(x=>x.id===src);
+  if(i>=0&&(!it||it.dataset.id!==src)){
+    const [m]=data.recur.splice(i,1);
+    let j=it?data.recur.findIndex(x=>x.id===it.dataset.id):data.recur.length;   /* 빈 곳 = 맨 뒤 */
+    if(it&&!rcDropPos(e,it)) j++;
+    data.recur.splice(j,0,m); save();
+  }
+  rcClearDrag(); renderRecurList();
+});
+_rl.addEventListener('dragend',()=>{ rcDragId=null; rcClearDrag(); });
+/* 목록: ✕ = 삭제, 기한 칸 = 빠른 변경, 나머지 어디를 눌러도 수정 */
 document.getElementById('rcList').addEventListener('click',e=>{
-  const del=e.target.closest('[data-act="rdel"]'); if(!del)return;
-  const id=del.closest('.rc-item').dataset.id;
-  data.recur=data.recur.filter(x=>x.id!==id);
-  for(const ds in data.tasks){ if(ds>=todayStr) data.tasks[ds]=data.tasks[ds].filter(t=>!(t.rid===id&&!t.done)); }
+  const item=e.target.closest('.rc-item'); if(!item)return;
+  const id=item.dataset.id;
+  if(e.target.closest('[data-act="rdel"]')){
+    data.recur=data.recur.filter(x=>x.id!==id);
+    const td=fmt(new Date());
+    for(const ds in data.tasks){ if(ds>=td) data.tasks[ds]=data.tasks[ds].filter(t=>!(t.rid===id&&!t.done)); }
+    save(); renderAll();
+    if(rcEditId===id) rcResetForm(); else renderRecurList();
+    return;
+  }
+  if(e.target.closest('select'))return;
+  rcEditStart(id);
+});
+/* 기한 선택 (새 규칙) */
+document.getElementById('rcDue').addEventListener('click',e=>{const b=e.target.closest('button'); if(!b)return;
+  rcDueMode=b.dataset.due; document.querySelectorAll('#rcDue button').forEach(x=>x.classList.toggle('on',x===b));
+  rcDueHint(); if(rcDueMode==='n'){const i=document.getElementById('rcDueDays'); i.focus(); i.select();}});
+document.getElementById('rcDueDays').addEventListener('input',rcDueHint);
+/* 주기·요일·날짜를 바꾸면 예시 문구도 갱신 (기존 핸들러 다음에 실행) */
+document.getElementById('rcFreq').addEventListener('click',rcDueHint);
+document.getElementById('rcWeekdays').addEventListener('click',rcDueHint);
+document.getElementById('rcMonthday').addEventListener('change',rcDueHint);
+/* 등록된 규칙의 기한 바꾸기 → 앞으로의 회차에도 바로 반영 */
+document.getElementById('rcList').addEventListener('change',e=>{
+  const s=e.target.closest('[data-act="rdue"]'); if(!s)return;
+  const r=data.recur.find(x=>x.id===s.closest('.rc-item').dataset.id); if(!r)return;
+  const old=r.dueOffset??null;
+  if(s.value==='') delete r.dueOffset; else r.dueOffset=+s.value;
+  const n=rcApplyDue(r,old);
   save(); renderAll(); renderRecurList();
+  toast('🔁 기한을 바꿨어요'+(n?` · 이미 만들어진 할일 ${n}개에도 적용`:''));
 });
 
 /* ===== Gist 동기화 ===== */
@@ -2754,7 +3175,7 @@ async function syncPull(){
     const r=await fetch('https://api.github.com/gists/'+c.gist,{headers:ghHeaders(c.token)});
     if(!r.ok){syncStatus('⚠️ 내려받기 실패 ('+r.status+')'); return false;}
     const j=await r.json(); const f=j.files&&j.files['weekly-planner.json'];
-    if(f&&f.content){const p=JSON.parse(f.content); if(p&&p.tasks){data=normalizeData(p); if(!Array.isArray(data.memoNotes))data.memoNotes=[]; if(!Array.isArray(data.recur))data.recur=[]; if(!data.holidays||typeof data.holidays!=='object'||Array.isArray(data.holidays))data.holidays={}; save(); renderAll(); renderMemo(); syncStatus('✅ 연결됨 · 마지막 동기화 '+fmtClock(new Date()));}}
+    if(f&&f.content){const p=JSON.parse(f.content); if(p&&p.tasks){data=normalizeData(p); if(!Array.isArray(data.memoNotes))data.memoNotes=[]; if(!Array.isArray(data.recur))data.recur=[]; if(!data.holidays||typeof data.holidays!=='object'||Array.isArray(data.holidays))data.holidays={}; repairMovedPeriods(); save(); renderAll(); renderMemo(); syncStatus('✅ 연결됨 · 마지막 동기화 '+fmtClock(new Date()));}}
     return true;
   }catch(e){syncStatus('⚠️ 네트워크 오류'); return false;}
 }
@@ -2903,7 +3324,34 @@ document.getElementById('holDisconnectBtn').onclick=()=>{
   updateHolUI();
 };
 
+/* ===== 1회성 데이터 복구 (2026-09-23) =====
+   밀린 할일 기능이 진행 중인 기간 할일(시작일은 지났지만 기한이 남은 일)까지 밀린 것으로 보고 오늘로 끌어와,
+   9/3~10/28 막대가 9/23부터로 줄어든 것을 원래 시작일로 되돌림.
+   아직 옮겨진 그대로(9/23 · 기한 10/28 · 미완료)일 때만 움직이므로 여러 번 불려도 안전.
+   동기화로 옛 상태가 다시 내려와도 syncPull 뒤에 한 번 더 부름. 10/28이 지나면 아무것도 안 함 → 그 뒤엔 지워도 됨 */
+function repairMovedPeriods(){
+  if(fmt(new Date())>'2026-10-28') return false;
+  const fixes=[{id:'mtl2swr2kge0', from:'2026-09-23', to:'2026-09-03', due:'2026-10-28'}];
+  let n=0;
+  fixes.forEach(f=>{
+    const arr=data.tasks[f.from]; if(!arr)return;
+    const i=arr.findIndex(t=>t.id===f.id&&t.due===f.due&&!t.done); if(i<0)return;
+    const [t]=arr.splice(i,1); (data.tasks[f.to]=data.tasks[f.to]||[]).push(t); n++;
+  });
+  /* 삭제한 반복 규칙(아래 goneRid)의 남은 미완료 회차 정리 (사용자 요청 2026-09-23).
+     규칙이 정말 없어졌을 때만 지우고, 완료한 회차는 기록으로 남김 */
+  const goneRid='rmucfs28j1z0r';
+  if(!(data.recur||[]).some(r=>r.id===goneRid)){
+    for(const ds in data.tasks){
+      const a=data.tasks[ds], b=a.filter(t=>!(t.rid===goneRid&&!t.done));
+      if(b.length!==a.length){ data.tasks[ds]=b; n+=a.length-b.length; }
+    }
+  }
+  return n>0;
+}
+
 /* ===== 시작 ===== */
+if(repairMovedPeriods()) save();
 generateRecurring();
 renderAll();
 renderMemo();
@@ -3574,6 +4022,8 @@ renderTimer();
 renderGarden();
 renderQuests();
 renderAll();   /* ▶ 버튼이 붙은 taskHTML로 다시 그리기 */
+/* 위젯 모드로 꺼졌으면 다시 왼쪽에 붙여서 시작 (ftSettings 가 생긴 뒤라 여기서 호출) */
+if (widgetMode) applyDock(true); else renderDockPin();
 </script>
 </body>
 </html>

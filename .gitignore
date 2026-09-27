@@ -4,3 +4,20 @@
 # 맥 앱 빌드 산출물
 mac/dist/
 *.dmg
+
+# 윈도우 앱(Electron) 의존성 · 빌드 결과물 (npm install / npm run dist 로 다시 만들 수 있음, GitHub 용량 한도 초과)
+node_modules/
+release/
+build-log.txt
+
+# 개인 데이터 내보내기 파일 — 실제 업무 기록이 들어 있으니 올리지 않음
+업무플래너_*.json
+*.backup.json
+
+# 로컬 전용 설정
+.claude/settings.local.json
+
+# OS / 편집기
+Thumbs.db
+Desktop.ini
+.vscode/
