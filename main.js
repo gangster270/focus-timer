@@ -61,6 +61,34 @@ ipcMain.handle('set-mini-mode', (_e, { mini, pinned }) => {
   return mini;
 });
 
+/* 위젯 도킹: 창을 현재 모니터 왼쪽 끝에 세로로 꽉 차게 붙임. 풀면 원래 위치·크기로 복귀 */
+let dockState = null;
+ipcMain.handle('set-dock', async (_e, { dock, width, pinned }) => {
+  if (!win) return false;
+  if (dock) {
+    if (!dockState) dockState = { bounds: win.getBounds(), maximized: win.isMaximized() };
+    if (win.isFullScreen()) win.setFullScreen(false);
+    if (win.isMaximized()) {
+      win.unmaximize();
+      await new Promise(r => setTimeout(r, 80));   /* 복원 애니메이션이 setBounds 를 덮어쓰지 않게 */
+    }
+    const wa = screen.getDisplayMatching(win.getBounds()).workArea;
+    const w = Math.max(300, Math.min(Math.round(width) || 380, Math.round(wa.width / 2)));
+    win.setBounds({ x: wa.x, y: wa.y, width: w, height: wa.height });
+    win.setAlwaysOnTop(!!pinned, 'screen-saver');
+  } else {
+    if (dockState) {
+      win.setBounds(dockState.bounds);
+      if (dockState.maximized) win.maximize();
+      dockState = null;
+    } else {
+      win.maximize();   /* 도킹 상태로 앱을 다시 켠 경우: 처음 켤 때처럼 크게 */
+    }
+    win.setAlwaysOnTop(!!pinned, 'screen-saver');
+  }
+  return dock;
+});
+
 ipcMain.on('flash-frame', () => {
   if (!win) return;
   /* macOS는 작업표시줄 깜빡임이 없어 Dock 아이콘 튀기기로 대체 */

@@ -333,7 +333,14 @@
   .w-list{display:flex; flex-direction:column; gap:5px;}
   body.widget-mode .task .txt{font-size:14px;}
   body.widget-mode .task{padding:9px 9px 9px 10px;}
-  body.widget-mode .task .del{display:none;}
+  /* 위젯에선 ⋯ 을 평소엔 숨기고 마우스를 올리면 보여줌 (맨 위로·삭제 등을 여기서도 쓰게) */
+  body.widget-mode .task .del{opacity:0; transition:.12s;}
+  body.widget-mode .task:hover .del{opacity:1;}
+  .w-head-btns{display:flex; gap:6px; flex-shrink:0;}
+  /* 왼쪽에 붙은(도킹) 창: 창 폭을 그대로 다 씀 */
+  body.docked{padding:8px;}
+  body.docked .wrap{max-width:none;}
+  body.docked .widget-card{border-radius:14px; padding:14px;}
   .wg-toolbar{margin-bottom:10px;}
   .wg-toggle{display:inline-flex; gap:3px; background:var(--bg); border-radius:9px; padding:3px;}
   .wg-toggle button{border:none; background:none; padding:5px 14px; border-radius:7px; font-size:12px; font-weight:700; color:var(--sub); cursor:pointer; font-family:inherit;}
@@ -794,7 +801,7 @@
       <button class="today-btn" id="recurToggle">🔁 반복</button>
       <button class="today-btn" id="blToggle" title="지난 날에 남았거나 기한이 지난 할일 모아보기">📥 밀린 할일</button>
       <button class="today-btn" id="memoToggle">📝 메모</button>
-      <button class="today-btn" id="widgetToggle">🪟 위젯</button>
+      <button class="today-btn" id="widgetToggle" title="위젯 — 화면 왼쪽에 세로로 고정해서 계속 보며 할일 관리">🪟 위젯</button>
     </div>
   </div>
 
@@ -935,7 +942,7 @@
     <div class="widget-card">
       <div class="w-head">
         <div class="w-date" id="wgDate">—</div>
-        <button class="today-btn" id="wgExit">✕ 전체 화면</button>
+        <div class="w-head-btns"><button class="today-btn hidden" id="wgPin" title="다른 창 위에 항상 보이기 (켜기/끄기)">📌</button><button class="today-btn" id="wgExit" title="원래 창 크기·위치로 돌아가기">✕ 전체 화면</button></div>
       </div>
       <div class="wg-toolbar"><div class="wg-toggle" id="wgToggle"><button data-r="week">이번 주</button><button data-r="3day">3일</button></div></div>
       <div class="w-sub"><span id="wgProgLabel">이번 주 진행률</span><b id="wgPct">0%</b></div>
@@ -1593,7 +1600,42 @@ function updateViews(){
   document.getElementById('projectView').classList.toggle('hidden',widgetMode||currentView!=='project');
   if(!widgetMode&&currentView==='project')renderPj();
 }
-function setWidget(on){widgetMode=on; try{localStorage.setItem('wp_widget',on?'1':'0');}catch(e){} updateViews(); if(on)renderWidget();}
+function setWidget(on){widgetMode=on; try{localStorage.setItem('wp_widget',on?'1':'0');}catch(e){} updateViews(); if(on)renderWidget(); applyDock(on);}
+
+/* ===== 위젯 도킹 (Electron 전용): 화면 왼쪽 끝에 세로로 고정 =====
+   폭은 사용자가 창 가장자리를 끌어 바꾸면 기억(wp_dock_w), 항상 위는 📌로 켜고 끔(wp_dock_pin, 기본 켜짐).
+   브라우저에선 electronAPI 가 없어 예전처럼 화면 안에서만 위젯으로 바뀜 */
+const HAS_DOCK=!!(window.electronAPI&&window.electronAPI.setDock);
+function dockPinned(){try{return localStorage.getItem('wp_dock_pin')!=='0';}catch(e){return true;}}
+function dockWidth(){try{const w=+localStorage.getItem('wp_dock_w'); return w>=300&&w<=1200?w:380;}catch(e){return 380;}}
+function renderDockPin(){
+  const b=document.getElementById('wgPin'); if(!b)return;
+  b.classList.toggle('hidden',!HAS_DOCK);
+  const on=dockPinned();
+  b.style.background=on?'var(--primary-light)':''; b.style.color=on?'var(--primary)':'';
+  b.title=on?'항상 위에 보이는 중 — 눌러서 끄기':'다른 창 위에 항상 보이기 (지금 꺼짐)';
+}
+function applyDock(on){
+  document.body.classList.toggle('docked',on&&HAS_DOCK);
+  renderDockPin();
+  if(!HAS_DOCK)return;
+  /* 풀 때는 타이머 쪽 📌(항상 위) 설정으로 되돌림 */
+  const basePin=(typeof ftSettings!=='undefined'&&!!ftSettings.pinned);
+  window.electronAPI.setDock(on, dockWidth(), on?dockPinned():basePin);
+}
+let _dockW=null;
+window.addEventListener('resize',()=>{
+  if(!widgetMode||!HAS_DOCK)return;
+  clearTimeout(_dockW);
+  _dockW=setTimeout(()=>{const w=window.outerWidth; if(w>=300&&w<=1200){try{localStorage.setItem('wp_dock_w',String(w));}catch(e){}}},400);
+});
+document.getElementById('wgPin').addEventListener('click',()=>{
+  const on=!dockPinned();
+  try{localStorage.setItem('wp_dock_pin',on?'1':'0');}catch(e){}
+  if(HAS_DOCK) window.electronAPI.setAlwaysOnTop(on);
+  renderDockPin();
+  toast(on?'📌 다른 창 위에 항상 보여요':'📌 고정 해제 — 다른 창 뒤로 갈 수 있어요');
+});
 
 /* ===== 하루 모달 ===== */
 let modalDS=null, modalPri='mid', modalCat='work';
@@ -3729,6 +3771,8 @@ renderTimer();
 renderGarden();
 renderQuests();
 renderAll();   /* ▶ 버튼이 붙은 taskHTML로 다시 그리기 */
+/* 위젯 모드로 꺼졌으면 다시 왼쪽에 붙여서 시작 (ftSettings 가 생긴 뒤라 여기서 호출) */
+if (widgetMode) applyDock(true); else renderDockPin();
 </script>
 </body>
 </html>
