@@ -425,6 +425,46 @@
   .timeline .tl-now::before{content:''; position:absolute; left:-4px; top:-3px; width:8px; height:8px; border-radius:50%; background:var(--high);}
   .tl-empty{padding:14px; text-align:center; font-size:12px; color:var(--sub);}
   .modal-add{display:flex; gap:8px; margin-bottom:18px;}
+  /* ===== 생각 쏟아내기 (하루 모달 맨 위) ===== */
+  .dump{margin-bottom:18px;}
+  .dump-open{width:100%; border:1.5px dashed var(--primary); background:var(--primary-light); color:var(--primary); border-radius:12px;
+    padding:11px 12px; font-size:13.5px; font-weight:800; cursor:pointer; font-family:inherit;}
+  .dump-open:hover{filter:brightness(.97);}
+  #dmDumpBody{border:1.5px solid var(--primary); border-radius:14px; padding:12px; background:#FAFCFF;}
+  .dump-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:14px;}
+  .dump-x{border:1px solid var(--border); background:#fff; color:var(--sub); border-radius:8px; padding:3px 9px; font-size:11.5px; font-weight:700; cursor:pointer; font-family:inherit;}
+  #dmDumpText{width:100%; box-sizing:border-box; min-height:150px; resize:vertical; border:1px solid var(--border); border-radius:10px;
+    padding:10px 12px; font-size:14px; line-height:1.7; font-family:inherit; outline:none; color:var(--text);}
+  #dmDumpText:focus{border-color:var(--primary);}
+  .dump-hint{font-size:11.5px; color:var(--sub); margin:7px 2px 9px; line-height:1.55;}
+  .dump-go{width:100%; border:none; background:var(--primary); color:#fff; border-radius:10px; padding:11px; font-size:14px; font-weight:800; cursor:pointer; font-family:inherit;}
+  .dump-go:disabled{opacity:.4; cursor:default;}
+  .dump-btns{display:flex; gap:8px; margin-top:10px;}
+  .dump-btns .dump-go{flex:1;}
+  .dump-back{border:1px solid var(--border); background:#fff; color:var(--sub); border-radius:10px; padding:0 14px; font-weight:700; cursor:pointer; font-family:inherit; font-size:13px;}
+  .dump-sum{font-size:12px; font-weight:700; color:var(--text); margin:0 2px 8px;}
+  .dump-list{display:flex; flex-direction:column; gap:6px;}
+  .dump-row{display:flex; gap:7px; align-items:flex-start; background:#fff; border:1px solid var(--border2); border-radius:10px; padding:8px 8px 8px 6px;}
+  .dump-row.off{opacity:.55;}
+  .dump-row.dragging{opacity:.4;}
+  .dump-row.ins-before{box-shadow:inset 0 3px 0 var(--primary);}
+  .dump-row.ins-after{box-shadow:inset 0 -3px 0 var(--primary);}
+  .dump-grip{color:var(--sub); opacity:.5; cursor:grab; font-size:13px; letter-spacing:-3px; padding-top:2px; user-select:none;}
+  .dump-rank{min-width:20px; height:20px; border-radius:10px; background:var(--primary); color:#fff; font-size:11px; font-weight:800;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0; margin-top:1px;}
+  .dump-rank.none{background:var(--bg); color:var(--sub);}
+  .dump-main{flex:1; min-width:0;}
+  .dump-txt{font-size:13.5px; line-height:1.4; word-break:break-word;}
+  .dump-txt .task-time{font-weight:800; color:var(--primary);}
+  .dump-meta{display:flex; gap:4px; flex-wrap:wrap; align-items:center; margin-top:5px;}
+  .dump-tag{font-size:10.5px; font-weight:700; color:var(--sub); background:var(--bg); border-radius:6px; padding:1px 6px;}
+  .dump-pri{width:20px; height:20px; border-radius:50%; border:none; cursor:pointer; flex-shrink:0;}
+  .dump-dest{border:1px solid var(--border); border-radius:7px; font-size:12px; font-weight:700; padding:3px 4px; font-family:inherit; background:#fff; color:var(--text); cursor:pointer;}
+  .dump-date{border:1px solid var(--border); border-radius:7px; font-size:12px; padding:2px 4px; font-family:inherit;}
+  .dump-mv{display:flex; flex-direction:column; gap:2px; flex-shrink:0;}
+  .dump-mv button{border:1px solid var(--border); background:#fff; color:var(--sub); border-radius:5px; width:24px; height:18px; font-size:9px; line-height:1; cursor:pointer; padding:0;}
+  .dump-mv button:hover{border-color:var(--primary); color:var(--primary);}
+  .dump-bl{width:100%; margin-top:8px; border:1px dashed var(--high); background:#FFF7F8; color:var(--high); border-radius:9px; padding:7px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit;}
   .modal-add input{flex:1; border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:14px; font-family:inherit; outline:none;}
   .modal-add input:focus{border-color:var(--primary);}
   .modal-add button{background:var(--primary); color:#fff; border:none; padding:0 18px; border-radius:10px; font-weight:700; cursor:pointer; font-family:inherit; font-size:14px;}
@@ -1002,6 +1042,25 @@
   <div class="modal">
     <div class="modal-head"><div class="modal-title" id="dmTitle">—</div><button class="close-x" id="dmClose">✕</button></div>
     <div class="modal-body">
+      <!-- 생각 쏟아내기: 1) 떠오르는 대로 적기 → 2) 배치·우선순위 정하기 → 확정 -->
+      <div class="dump" id="dmDump">
+        <button class="dump-open" id="dmDumpOpen">🧠 생각나는 대로 적고 <span id="dmDumpDay">오늘</span> 정리하기</button>
+        <div id="dmDumpBody" hidden>
+          <div class="dump-head"><b>🧠 생각나는 대로 적기</b><button class="dump-x" id="dmDumpClose" title="접기 (적은 내용은 남아 있어요)">접기</button></div>
+          <div id="dmDumpStep1">
+            <textarea id="dmDumpText" placeholder="떠오르는 일을 한 줄에 하나씩, 순서 신경 쓰지 말고 마구 적어보세요&#10;예) 보고서 마무리&#10;14:00 팀 회의 #스마트팜&#10;센서 교정 ~10/10 !&#10;장보기"></textarea>
+            <div class="dump-hint">한 줄 = 할일 하나 · <b>14:00</b> 시간 · <b>#이름</b> 프로젝트 · <b>~10/10</b> 기한 · <b>!</b> 중요 그대로 써도 돼요</div>
+            <button class="dump-go" id="dmDumpNext">정리하기 →</button>
+          </div>
+          <div id="dmDumpStep2" hidden>
+            <div class="dump-hint">끌어서(또는 ▲▼) <b>순서 = 우선순위</b>로 맞추고, 줄마다 언제 할지 골라요. 이미 있던 할일도 같이 있어요.</div>
+            <div class="dump-sum" id="dmDumpSum"></div>
+            <div id="dmDumpList" class="dump-list"></div>
+            <button class="dump-bl" id="dmDumpBl" hidden></button>
+            <div class="dump-btns"><button class="dump-back" id="dmDumpBack">← 더 적기</button><button class="dump-go" id="dmDumpCommit">✅ 계획 확정</button></div>
+          </div>
+        </div>
+      </div>
       <div class="sec-label">분류</div>
       <div class="pick" id="dmCat"><button data-c="work" class="sel work">💼 업무</button><button data-c="personal">🏠 개인</button><button data-c="grad">🎓 대학원</button></div>
       <div class="sec-label">우선순위</div>
@@ -1407,7 +1466,12 @@ function parseDateToken(s,baseDs){
 }
 /* 인라인 토큰: #프로젝트 · ~8/15(기한) · !(높은 우선순위) · 맨 앞 14:00 / 14:00-15:30 / 오후 2시 (시간) */
 function addTask(ds,text,pri,cat,due,project,color,at,end){
-  if(!text.trim())return;
+  const t=parseTaskText(ds,text,pri,cat,due,project,color,at,end); if(!t)return;
+  if(!data.tasks[ds])data.tasks[ds]=[];
+  data.tasks[ds].push(t); save(); renderAll();}
+/* 입력 한 줄 → 할일 객체 (저장은 하지 않음). addTask 와 생각 쏟아내기가 함께 씀 */
+function parseTaskText(ds,text,pri,cat,due,project,color,at,end){
+  if(!text||!text.trim())return null;
   let txt=text.trim(), prj=(project||'').trim()||null;
   const tm=pullTime(txt);
   if(tm&&tm.rest){ if(!at){at=tm.at; if(!end)end=tm.end;} txt=tm.rest; }
@@ -1417,12 +1481,11 @@ function addTask(ds,text,pri,cat,due,project,color,at,end){
   if(dm){ const dd=parseDateToken(dm[1],ds); if(dd){ due=dd; txt=txt.replace(dm[0],' '); } }
   if(/(^|\s)!(?=\s|$)/.test(txt)){ pri='high'; txt=txt.replace(/(^|\s)!(?=\s|$)/,' '); }
   txt=txt.replace(/\s{2,}/g,' ').trim();
-  if(!txt)return;
-  if(!data.tasks[ds])data.tasks[ds]=[];
+  if(!txt)return null;
   const t={id:uid(),text:txt,priority:pri||'mid',category:cat||'work',done:false};
   if(due)t.due=due; if(prj)t.project=prj; if(color)t.color=color;
   if(hm2min(at)!=null){t.at=at; if(hm2min(end)!=null)t.end=end;}
-  data.tasks[ds].push(t); save(); renderAll();}
+  return t;}
 function findTask(ds,id){return rawTasks(ds).find(x=>x.id===id);}
 function toggleTask(ds,id){const t=findTask(ds,id); if(t){t.done=!t.done; save(); renderAll();}}
 function delTask(ds,id){data.tasks[ds]=rawTasks(ds).filter(x=>x.id!==id); save(); renderAll();}
@@ -1751,8 +1814,152 @@ function openDay(ds){
   renderModalTasks();
   document.getElementById('dmLog').value=data.logs[ds]||'';
   document.getElementById('dmInput').value='';
+  dumpOnOpen(ds);
   document.getElementById('dayOverlay').classList.add('show');
 }
+
+/* ===== 생각 쏟아내기: 떠오르는 대로 적기 → 배치·우선순위 → 확정 =====
+   적은 글은 기기에 임시 저장(wp_dump)돼서 창을 닫아도 남음. 확정하면 지움.
+   2단계 목록 = 새로 적은 줄 + 그 날 이미 있던 미완료 할일 (+ 원하면 밀린 할일) — 순서가 곧 그 날 우선순위 */
+let dumpItems=[], dumpDragKey=null;
+function dumpDraft(){try{return JSON.parse(localStorage.getItem('wp_dump')||'null');}catch(e){return null;}}
+function dumpSaveDraft(){try{const v=document.getElementById('dmDumpText').value; if(v.trim()) localStorage.setItem('wp_dump',JSON.stringify({ds:modalDS,text:v})); else localStorage.removeItem('wp_dump');}catch(e){}}
+function dumpLines(){
+  return document.getElementById('dmDumpText').value.split('\n')
+    .map(s=>s.replace(/^\s*(?:[-*•·]|\d{1,2}[.)])\s+/,'').trim()).filter(Boolean);   /* 앞의 - · 1. 같은 기호는 떼고 */
+}
+function dumpDayWord(ds){const td=fmt(new Date()); return ds===td?'오늘':ds===fmt(addDays(new Date(),1))?'내일':md(ds);}
+function dumpShow(step){   /* step: 0=접힘, 1=적기, 2=정리 */
+  document.getElementById('dmDumpOpen').hidden=step!==0;
+  document.getElementById('dmDumpBody').hidden=step===0;
+  document.getElementById('dmDumpStep1').hidden=step!==1;
+  document.getElementById('dmDumpStep2').hidden=step!==2;
+  if(step===1){ dumpCount(); setTimeout(()=>{const t=document.getElementById('dmDumpText'); t.focus(); t.setSelectionRange(t.value.length,t.value.length);},30); }
+}
+function dumpCount(){const n=dumpLines().length; const b=document.getElementById('dmDumpNext'); b.disabled=!n&&!getTasks(modalDS).some(t=>!t.done); b.textContent=n?`정리하기 → (${n}개)`:'이 날 할일 순서만 정리하기 →';}
+function dumpOnOpen(ds){
+  dumpItems=[];
+  document.getElementById('dmDumpDay').textContent=dumpDayWord(ds);
+  const dr=dumpDraft(), ta=document.getElementById('dmDumpText');
+  ta.value=(dr&&dr.ds===ds)?dr.text:'';
+  /* 오늘인데 아직 할 일이 없거나, 적다 만 글이 있으면 바로 펼침 */
+  const empty=!getTasks(ds).some(t=>!t.done);
+  dumpShow((dr&&dr.ds===ds)||(ds===fmt(new Date())&&empty)?1:0);
+}
+/* 2단계 목록 만들기: 이미 있던 할일(현재 보이는 순서) → 새로 적은 줄 */
+function dumpBuild(){
+  const ds=modalDS;
+  dumpItems=sortTasks(getTasks(ds),ds).filter(t=>!t.done).map(t=>({key:'h'+t.id, kind:'have', id:t.id, srcDs:ds, t, pri:t.priority||'mid', dest:'day'}));
+  dumpLines().forEach((line,i)=>{
+    const t=parseTaskText(ds,line,'mid',modalCat); if(!t)return;
+    dumpItems.push({key:'n'+i+'_'+t.id, kind:'new', raw:line, t, pri:t.priority, dest:'day'});
+  });
+}
+function dumpDestOptions(it){
+  const ds=modalDS, w=dumpDayWord(ds), nx=dumpDayWord(fmt(addDays(new Date(ds+'T00:00:00'),1)));
+  const o=[['day',w==='오늘'?'오늘':w+'(이 날)'],['next',nx==='내일'?'내일':nx+'(다음 날)'],['pick','다른 날…']];
+  if(it.kind==='new') o.push(['memo','📝 메모로 (나중에)'],['drop','✕ 버리기']);
+  return o.map(([v,l])=>`<option value="${v}"${it.dest===v?' selected':''}>${l}</option>`).join('');
+}
+function dumpRender(){
+  const box=document.getElementById('dmDumpList'); let rank=0;
+  const cnt={day:0,next:0,pick:0,memo:0,drop:0};
+  box.innerHTML=dumpItems.map(it=>{
+    cnt[it.dest]++;
+    const onDay=it.dest==='day'; if(onDay) rank++;
+    const t=it.t, tl=timeLabel(t);
+    const tags=[it.kind==='have'?'이미 있던 일':it.kind==='bl'?`📥 ${dayLabel(it.srcDs)}에서`:'',
+      t.project?'#'+esc(t.project):'', t.due?'기한 '+md(t.due):''].filter(Boolean).map(s=>`<span class="dump-tag">${s}</span>`).join('');
+    return `<div class="dump-row${it.dest==='drop'||it.dest==='memo'?' off':''}" draggable="true" data-key="${it.key}">
+      <span class="dump-grip" title="끌어서 순서 바꾸기">⋮⋮</span>
+      <span class="dump-rank${onDay?'':' none'}" title="${onDay?'이 날 '+rank+'순위':''}">${onDay?rank:'–'}</span>
+      <div class="dump-main">
+        <div class="dump-txt">${tl?`<span class="task-time">${esc(tl)}</span> `:''}${esc(taskBody(t))}</div>
+        <div class="dump-meta">
+          <button class="dump-pri" data-dact="pri" style="background:${PCOLOR[it.pri]}" title="중요도: ${({high:'높음',mid:'보통',low:'낮음'})[it.pri]} (눌러서 바꾸기)"></button>
+          <select class="dump-dest" data-dact="dest">${dumpDestOptions(it)}</select>
+          ${it.dest==='pick'?`<input type="date" class="dump-date" data-dact="date" value="${it.pickDs||''}">`:''}
+          ${tags}
+        </div>
+      </div>
+      <div class="dump-mv"><button data-dact="up" title="위로">▲</button><button data-dact="down" title="아래로">▼</button></div>
+    </div>`;
+  }).join('')||'<div class="empty">정리할 할일이 없어요</div>';
+  const w=dumpDayWord(modalDS);
+  document.getElementById('dmDumpSum').textContent=
+    `${w} ${cnt.day}개`+(cnt.next?` · 다음 날 ${cnt.next}`:'')+(cnt.pick?` · 다른 날 ${cnt.pick}`:'')+(cnt.memo?` · 메모 ${cnt.memo}`:'')+(cnt.drop?` · 버림 ${cnt.drop}`:'');
+  /* 밀린 할일 불러오기 (아직 목록에 없는 것만) */
+  const have=new Set(dumpItems.filter(x=>x.id).map(x=>x.id));
+  const bl=backlogItems(new Set([modalDS])).filter(o=>!have.has(o.t.id));
+  const bb=document.getElementById('dmDumpBl'); bb.hidden=!bl.length; bb.textContent=`📥 밀린 할일 ${bl.length}개도 불러와서 같이 정하기`;
+}
+function dumpFind(el){const r=el.closest('.dump-row'); return r?dumpItems.findIndex(x=>x.key===r.dataset.key):-1;}
+function dumpCommit(){
+  const ds=modalDS, nextDs=fmt(addDays(new Date(ds+'T00:00:00'),1));
+  /* 이미 있던 할일·밀린 할일은 원래 자리에서 꺼냄 */
+  dumpItems.forEach(it=>{ if(it.kind==='new')return; const a=rawTasks(it.srcDs); const i=a.findIndex(x=>x.id===it.id); it.t=i>=0?a.splice(i,1)[0]:null; });
+  const dayList=[], memo=[]; let moved=0, dropped=0;
+  dumpItems.forEach(it=>{
+    const t=it.t; if(!t)return;
+    if(it.dest==='drop'){dropped++; return;}
+    if(it.dest==='memo'){memo.push(it.raw); return;}
+    t.priority=it.pri;
+    const tgt=it.dest==='next'?nextDs:(it.dest==='pick'&&it.pickDs)?it.pickDs:ds;
+    if(it.kind==='bl') blDueFix(t,tgt);
+    if(tgt===ds) dayList.push(t);
+    else { (data.tasks[tgt]=data.tasks[tgt]||[]).push(t); moved++; }
+  });
+  data.tasks[ds]=dayList.concat(data.tasks[ds]||[]);   /* 남은 건 완료된 일 → 뒤로 */
+  if(dayList.length) enableManual(ds);                   /* 정한 순서 그대로 1, 2, 3… */
+  if(memo.length){
+    data.memoNotes.unshift({id:muid(), text:`# 나중에 할 일 (${md(ds)} 정리)\n`+memo.map(s=>'- '+s).join('\n'), color:pickColor()});
+    if(typeof renderMemo==='function') renderMemo();
+  }
+  try{localStorage.removeItem('wp_dump');}catch(e){}
+  document.getElementById('dmDumpText').value=''; dumpItems=[];
+  save(); renderAll(); dumpShow(0);
+  toast(`✅ ${dumpDayWord(ds)} 할일 ${dayList.length}개 순서 확정`+(moved?` · 다른 날 ${moved}`:'')+(memo.length?` · 메모 ${memo.length}`:'')+(dropped?` · 버림 ${dropped}`:''));
+}
+document.getElementById('dmDumpOpen').onclick=()=>dumpShow(1);
+document.getElementById('dmDumpClose').onclick=()=>{dumpSaveDraft(); dumpShow(0);};
+document.getElementById('dmDumpText').addEventListener('input',()=>{dumpSaveDraft(); dumpCount();});
+document.getElementById('dmDumpNext').onclick=()=>{dumpBuild(); dumpRender(); dumpShow(2);};
+document.getElementById('dmDumpBack').onclick=()=>dumpShow(1);
+document.getElementById('dmDumpCommit').onclick=dumpCommit;
+document.getElementById('dmDumpBl').onclick=()=>{
+  const have=new Set(dumpItems.filter(x=>x.id).map(x=>x.id));
+  backlogItems(new Set([modalDS])).filter(o=>!have.has(o.t.id)).forEach(o=>dumpItems.push({key:'b'+o.t.id, kind:'bl', id:o.t.id, srcDs:o.ds, t:o.t, pri:o.t.priority||'mid', dest:'day'}));
+  dumpRender();
+};
+const _dl=document.getElementById('dmDumpList');
+_dl.addEventListener('click',e=>{
+  const b=e.target.closest('[data-dact]'); if(!b)return; const i=dumpFind(b); if(i<0)return;
+  const a=b.dataset.dact, it=dumpItems[i];
+  if(a==='pri'){const o=['high','mid','low']; it.pri=o[(o.indexOf(it.pri)+1)%3];}
+  else if(a==='up'&&i>0) [dumpItems[i-1],dumpItems[i]]=[dumpItems[i],dumpItems[i-1]];
+  else if(a==='down'&&i<dumpItems.length-1) [dumpItems[i+1],dumpItems[i]]=[dumpItems[i],dumpItems[i+1]];
+  else return;
+  dumpRender();
+});
+_dl.addEventListener('change',e=>{
+  const s=e.target.closest('[data-dact]'); if(!s)return; const i=dumpFind(s); if(i<0)return;
+  if(s.dataset.dact==='dest'){ dumpItems[i].dest=s.value; if(s.value==='pick'&&!dumpItems[i].pickDs) dumpItems[i].pickDs=fmt(addDays(new Date(modalDS+'T00:00:00'),2)); }
+  if(s.dataset.dact==='date') dumpItems[i].pickDs=s.value;
+  dumpRender();
+});
+/* 데스크톱: 끌어서 순서 바꾸기 (폰은 ▲▼) */
+function dumpClearDrag(){_dl.querySelectorAll('.dragging,.ins-before,.ins-after').forEach(x=>x.classList.remove('dragging','ins-before','ins-after'));}
+_dl.addEventListener('dragstart',e=>{const r=e.target.closest('.dump-row'); if(!r||e.target.closest('select,input,button'))return; dumpDragKey=r.dataset.key; e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/dump',dumpDragKey); r.classList.add('dragging');});
+_dl.addEventListener('dragover',e=>{ if(!dumpDragKey)return; e.preventDefault(); const r=e.target.closest('.dump-row');
+  _dl.querySelectorAll('.ins-before,.ins-after').forEach(x=>{if(x!==r)x.classList.remove('ins-before','ins-after');});
+  if(!r||r.dataset.key===dumpDragKey)return; const rc=r.getBoundingClientRect(), before=e.clientY<rc.top+rc.height/2;
+  r.classList.toggle('ins-before',before); r.classList.toggle('ins-after',!before);});
+_dl.addEventListener('drop',e=>{ if(!dumpDragKey)return; e.preventDefault(); e.stopPropagation();
+  const src=dumpDragKey; dumpDragKey=null; const r=e.target.closest('.dump-row'); const i=dumpItems.findIndex(x=>x.key===src);
+  if(i>=0&&(!r||r.dataset.key!==src)){ const [m]=dumpItems.splice(i,1); let j=r?dumpItems.findIndex(x=>x.key===r.dataset.key):dumpItems.length;
+    if(r){const rc=r.getBoundingClientRect(); if(e.clientY>=rc.top+rc.height/2) j++;} dumpItems.splice(j,0,m); }
+  dumpClearDrag(); dumpRender();});
+_dl.addEventListener('dragend',()=>{dumpDragKey=null; dumpClearDrag();});
 function setPick(boxId,attr,val){document.querySelectorAll('#'+boxId+' button').forEach(b=>{b.className=''; if(b.dataset[attr]===val) b.className='sel '+val;});}
 function renderModalTasks(){const tasks=sortTasks(getTasks(modalDS),modalDS); const box=document.getElementById('dmTasks'); box.innerHTML=tasks.length?renderTaskList(tasks,modalDS):'<div class="empty">아직 할일이 없어요</div>'; renderTimeline();}
 
