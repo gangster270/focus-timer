@@ -2847,11 +2847,12 @@ function renderPjWeek(){
     }
     ((blocks[key]||(blocks[key]={}))[ds]||(blocks[key][ds]=[])).push(t);
   });
-  /* 프로젝트 목록: 진행 중 프로젝트 + 이번 주에 할일이 있는 프로젝트 + 이름만 있는 프로젝트 */
+  /* 프로젝트 목록: 완료되지 않은 모든 프로젝트 + 이번 주에 할일이 있는 프로젝트 + 이름만 있는 프로젝트 */
   const blocks4=(p)=>pjItems(p).some(({i})=>blocks[pwRowKey(p.name,i)]);
   let groups=[];
   (data.projects||[]).forEach(p=>{
-    if(p.status==='active'||blocks4(p)||free[p.name]) groups.push({name:p.name,p});
+    /* 진행 중·구상·보류는 늘 표시, 완료된 프로젝트는 이번 주에 한 일이 있을 때만 */
+    if(p.status!=='done'||blocks4(p)||free[p.name]) groups.push({name:p.name,p});
   });
   Object.keys(free).filter(n=>n&&!groups.some(g=>g.name===n)).sort((a,b)=>a.localeCompare(b,'ko')).forEach(n=>groups.push({name:n,p:null}));
   if(filterPrj!=='all') groups=groups.filter(g=>g.name===filterPrj);
