@@ -173,8 +173,64 @@
   .mbar.done{opacity:.4; text-decoration:line-through;}
   .mbar-space{flex-shrink:0;}
 
-  /* 기간 막대 (주간) */
-  .period-strip{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px 12px; min-width:1100px; margin-bottom:10px;}
+  /* 기간 막대 (주간) — 왼쪽 PROJECT 칸 폭만큼 비우고 요일 칸에 맞춤 */
+  .period-strip{display:grid; grid-template-columns:var(--pm-left) repeat(7,minmax(0,1fr)); gap:6px 0; min-width:1100px; margin-bottom:10px;}
+  .period-strip .pbar{margin:0 4px;}
+
+  /* ===== 주간: 프로젝트 × 요일 표 ===== */
+  :root{--pm-left:210px;}
+  .week-grid.pm{display:grid; grid-template-columns:var(--pm-left) repeat(7,minmax(0,1fr)); gap:0; min-width:1100px;
+    background:var(--card); border-radius:16px; box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--border);}
+  .pm-h{padding:10px 8px 8px; border-bottom:2px solid var(--text); border-left:1px solid var(--border); background:#fff;}
+  .pm-corner{border-left:none; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; letter-spacing:.5px; position:sticky; left:0; z-index:3;}
+  .pm-dh{cursor:pointer; display:flex; flex-direction:column; gap:5px; transition:.12s;}
+  .pm-dh:hover{background:var(--bg);}
+  .pm-dh .day-name{text-align:center;}
+  .pm-dh.today{background:var(--primary-light);} .pm-dh.today .day-name{color:var(--primary);}
+  .pm-dh.weekend .day-name,.pm-dh.holiday .day-name{color:var(--high);}
+  .pm-dh .head-right{justify-content:center; flex-wrap:wrap;}
+  .pm-log{border:none; background:none; cursor:pointer; font-size:12px; padding:0 2px; opacity:.35;}
+  .pm-log.has{opacity:1;}
+  .pm-prj{padding:9px 10px 8px; border-top:2px solid var(--text); background:#fff; position:sticky; left:0; z-index:2; display:flex; flex-direction:column; gap:4px; min-width:0;}
+  .pm-cell{border-top:2px solid var(--text); border-left:1px solid var(--border); padding:5px 4px 4px; display:flex; flex-direction:column; min-height:74px; min-width:0;}
+  .pm-cell.today{background:#F7FBFF;}
+  .pm-row-first{border-top:none !important;}
+  .pm-cell .task-list{padding:0; overflow:visible; flex:1;}
+  .pm-cell .prj-chip{display:none;}   /* 행이 곧 프로젝트라 칩은 중복 */
+  .pm-cell .tmeta:empty{display:none;}
+  .pm-cell .add-input.pm-add{margin-top:4px; padding:4px 7px; font-size:12px; border-style:dashed; opacity:0; transition:.12s;}
+  .pm-cell:hover .pm-add,.pm-cell .pm-add:focus{opacity:1;}
+  .pm-cell.empty .pm-add{margin-top:auto;}
+  @media (hover:none){.pm-cell .add-input.pm-add{opacity:1; border-color:transparent; background:transparent;}}   /* 아이폰: 호버가 없으니 항상 */
+  .pm-cell.drop-over{outline:2px dashed var(--primary); outline-offset:-3px; background:var(--primary-light);}
+  .pm-ptop{display:flex; align-items:center; gap:6px; min-width:0;}
+  .pm-pchk{width:17px; height:17px; border:2px solid var(--pc); border-radius:4px; flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:900;}
+  .pm-pchk.on{background:var(--pc);}
+  .pm-pname{font-size:14px; font-weight:800; color:var(--pc); flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pm-pname.link{cursor:pointer;} .pm-pname.link:hover{text-decoration:underline;}
+  .pm-prj.pdone .pm-pname{text-decoration:line-through; opacity:.6;}
+  .pm-pcnt{font-size:10.5px; font-weight:700; color:var(--sub); background:var(--bg); padding:2px 6px; border-radius:7px; flex-shrink:0;}
+  .pm-pst{font-size:10px; font-weight:700; color:var(--sub); flex-shrink:0;}
+  .pm-goals{list-style:none; margin:0; padding:0 0 0 2px; display:flex; flex-direction:column; gap:1px;}
+  .pm-goals li{display:flex; align-items:center; gap:5px; min-width:0;}
+  .pm-gchk{width:13px; height:13px; flex-shrink:0; border-radius:50%; border:1.5px solid var(--border); cursor:pointer; position:relative; background:#fff;}
+  .pm-gchk::after{content:''; position:absolute; inset:3px; border-radius:50%; background:var(--pc);}
+  .pm-goals li:not(.done) .pm-gchk{border-color:transparent; background:transparent;}
+  .pm-goals li:not(.done) .pm-gchk::after{inset:4px; background:var(--text);}
+  .pm-goals li:not(.done) .pm-gchk:hover{border-color:var(--pc);}
+  .pm-goals li.done .pm-gchk{border-color:var(--pc);}
+  .pm-gin,.pm-gnew{flex:1; min-width:0; border:none; background:transparent; font-family:inherit; font-size:12.5px; padding:2px 3px; border-radius:5px; outline:none; color:var(--text);}
+  .pm-gin:focus,.pm-gnew:focus{background:var(--bg);}
+  .pm-goals li.done .pm-gin{text-decoration:line-through; color:var(--sub);}
+  .pm-gnew::placeholder{color:#B0B8C1;}
+  .pm-gdot{width:13px; text-align:center; color:#B0B8C1; flex-shrink:0; font-size:12px;}
+  .pm-carry{align-self:flex-start; border:1px dashed var(--border); background:none; color:var(--sub); font-family:inherit; font-size:11px; font-weight:600; border-radius:7px; padding:2px 7px; cursor:pointer;}
+  .pm-carry:hover{color:var(--primary); border-color:var(--primary);}
+  .pm-new{grid-column:1/-1; border-top:2px solid var(--text); padding:8px 10px; display:flex; gap:8px; align-items:center; background:#fff;}
+  .pm-new input{flex:0 1 320px; border:1px dashed var(--border); border-radius:9px; padding:6px 10px; font-family:inherit; font-size:13px; outline:none;}
+  .pm-new input:focus{border-color:var(--primary); border-style:solid;}
+  .pm-new span{font-size:11.5px; color:var(--sub);}
+  @media (max-width:700px){:root{--pm-left:150px;}}
   /* 노트북(맥북 등) 화면: 간격·여백을 줄여 7일이 한 화면에 들어가게 */
   @media (max-width:1600px){
     body{padding:14px;}
@@ -1274,6 +1330,8 @@ function normalizeData(d){
   if(!d.logs||typeof d.logs!=='object'||Array.isArray(d.logs)) d.logs={};
   if(!Array.isArray(d.projects)) d.projects=[];
   if(!Array.isArray(d.recur)) d.recur=[];
+  /* 주간 프로젝트별 목표: { 'YYYY-MM-DD'(월요일): { 프로젝트이름|'_none': {done, items:[{id,text,done}]} } } */
+  if(!d.wgoals||typeof d.wgoals!=='object'||Array.isArray(d.wgoals)) d.wgoals={};
   d.recur=d.recur.filter(r=>r&&typeof r==='object'); d.recur.forEach(normalizeRule);
   if(!d.cal||typeof d.cal!=='object'||Array.isArray(d.cal)) d.cal={};
   if(d.cal.brief==null) d.cal.brief=true; if(!/^\d{2}:\d{2}$/.test(d.cal.briefTime||'')) d.cal.briefTime='08:00';
@@ -1557,47 +1615,21 @@ function renderWeek(){
   renderBacklog();   /* 밀린 할일 알약 + 패널 갱신 (항상 '진짜 이번 주' 기준) */
 
   let total=0,done=0,ph=0,pm=0,pl=0,cw=0,cp=0,cg=0,over=0,soon=0;
-  const grid=document.getElementById('weekGrid'); grid.innerHTML='';
-  dates.forEach((d,i)=>{
+  dates.forEach(d=>{
     const ds=fmt(d);
-    try{ renderDayCol(d,i,ds); }
-    catch(err){ /* 하루가 깨져도 나머지 요일은 계속 그린다 */
-      console.error('요일 렌더링 실패',ds,err);
-      const col=document.createElement('div'); col.className='day-col'; col.dataset.ds=ds;
-      col.innerHTML=`<div class="day-head"><div class="day-name">${DAYS[i]}<span class="date">${d.getMonth()+1}/${d.getDate()}</span></div></div><div class="task-list" data-ds="${ds}"><div class="empty" style="color:var(--high)">⚠️ 이 날 데이터를 표시할 수 없어요</div></div>`;
-      grid.appendChild(col);
-    }
+    try{
+      const vt=visible(ds), all=getTasks(ds);
+      total+=vt.length; done+=vt.filter(t=>t.done).length;
+      vt.forEach(t=>{if(!t.done){if(t.priority==='high')ph++;else if(t.priority==='mid')pm++;else pl++;
+        if(t.due){const n=dday(t.due); if(n<0)over++; else if(n<=2)soon++;}}});
+      all.forEach(t=>{if(!t.done){const c=t.category||'work'; if(c==='grad')cg++; else if(c==='personal')cp++; else cw++;}});
+    }catch(err){console.error('요일 집계 실패',ds,err);}
   });
-  function renderDayCol(d,i,ds){
-    const vt=visible(ds); const all=getTasks(ds);
-    const dDone=vt.filter(t=>t.done).length;
-    total+=vt.length; done+=dDone;
-    vt.forEach(t=>{if(!t.done){if(t.priority==='high')ph++;else if(t.priority==='mid')pm++;else pl++;
-      if(t.due){const n=dday(t.due); if(n<0)over++; else if(n<=2)soon++;}}});
-    all.forEach(t=>{if(!t.done){const c=t.category||'work'; if(c==='grad')cg++; else if(c==='personal')cp++; else cw++;}});
-
-    const isToday=ds===todayStr, isWeekend=i>=5, hasLog=(data.logs[ds]||'').trim().length>0;
-    const hol=holidayName(ds);
-    const flag=dueCountOn(ds);
-    const ac=addCat[ds]||(filterCat!=='all'?filterCat:'work');
-    const man=isManualDay(ds);
-    const col=document.createElement('div');
-    col.className='day-col'+(isToday?' today':'')+(isWeekend?' weekend':'')+(hol?' holiday':'');
-    col.dataset.ds=ds;
-    col.innerHTML=`
-      <div class="day-head">
-        <div class="day-name">${DAYS[i]}<span class="date">${d.getMonth()+1}/${d.getDate()}</span>${hol?`<span class="hol-badge">🎌 ${esc(hol)}</span>`:''}</div>
-        <div class="head-right">${flag?`<span class="hflag">🚩${flag}</span>`:''}<button class="ord-btn${man?' on':''}" data-ord="${ds}" title="${man?'내가 정한 순서로 보는 중 — 드래그하거나 ⋯ 메뉴로 순서를 바꿔요 (눌러서 자동 정렬로)':'시간·기한·중요도 자동 정렬 중 — 눌러서 내 순서 직접 정하기'}">${man?'①②③ 내 순서':'↕ 자동'}</button><div class="day-cnt ${vt.length>0&&dDone===vt.length?'full':''}">${dDone}/${vt.length}</div></div>
-      </div>
-      <div class="task-list" data-ds="${ds}">${renderTaskList(vt,ds,true)}</div>
-      <div class="add-row">
-        <div class="add-line">
-          <button class="cat-sw" data-ds="${ds}" data-cat="${ac}" title="분류 전환">${(CAT[ac]||CAT.work).icon}</button>
-          <input class="add-input" data-ds="${ds}" placeholder="+ 할일 추가 (14:00 ~8/15 #프로젝트 !)" title="14:00 또는 14:00-15:30 = 시간 · ~8/15 = 기한 · #이름 = 프로젝트 · ! = 높은 우선순위">
-        </div>
-        <button class="log-btn ${hasLog?'has':''}" data-log="${ds}">📝 업무 기록${hasLog?' ●':''}</button>
-      </div>`;
-    grid.appendChild(col);
+  try{ renderProjectMatrix(dates); }
+  catch(err){
+    console.error('프로젝트 주간표 렌더링 실패',err);
+    const grid=document.getElementById('weekGrid'); grid.className='week-grid';
+    grid.innerHTML='<div class="empty" style="color:var(--high);padding:30px">⚠️ 이번 주 표를 표시할 수 없어요</div>';
   }
   const pct=total?Math.round(done/total*100):0;
   document.getElementById('sTotal').textContent=total;
@@ -1614,6 +1646,91 @@ function renderWeek(){
   document.getElementById('lMid').textContent=pm;
   document.getElementById('lLow').textContent=pl;
   renderPeriodStrip(dates);
+}
+
+/* ===== 주간 = 프로젝트 × 요일 표 =====
+   행 = 프로젝트(왼쪽 칸: ☐ 이름 + 이번 주 목표 •), 열 = 월~일. 칸 안은 그 프로젝트의 그날 할일.
+   주간 목표는 data.wgoals[이번주 월요일][프로젝트이름 | '_none'] — 플래너 블롭이라 기기 간 동기화됨 */
+function wgKey(name){return name||'_none';}
+function wgGet(wk,name,make){
+  if(!data.wgoals)data.wgoals={};
+  let w=data.wgoals[wk]; if(!w){if(!make)return null; w=data.wgoals[wk]={};}
+  let g=w[wgKey(name)]; if(!g){if(!make)return null; g=w[wgKey(name)]={done:false,items:[]};}
+  if(!Array.isArray(g.items))g.items=[];
+  return g;
+}
+/* 비어 있는 목표 묶음은 지워서 블롭을 가볍게 */
+function wgTidy(wk,name){
+  const w=data.wgoals&&data.wgoals[wk]; if(!w)return;
+  const g=w[wgKey(name)]; if(g&&!g.done&&!(g.items||[]).length) delete w[wgKey(name)];
+  if(!Object.keys(w).length) delete data.wgoals[wk];
+}
+function pmRows(dates){
+  const wk=fmt(curMonday), g=(data.wgoals&&data.wgoals[wk])||{};
+  const inWeek=new Set();
+  dates.forEach(d=>visible(fmt(d)).forEach(t=>inWeek.add(t.project||'')));
+  const names=[], seen=new Set(); const add=n=>{if(!seen.has(n)){seen.add(n); names.push(n);}};
+  (data.projects||[]).forEach(p=>{if(p.name&&(p.status==='active'||inWeek.has(p.name)||g[p.name]))add(p.name);});
+  [...inWeek].filter(n=>n).sort((a,b)=>a.localeCompare(b,'ko')).forEach(add);   /* 태그만 있는 프로젝트 */
+  Object.keys(g).filter(k=>k!=='_none').forEach(add);                           /* 목표만 적어둔 프로젝트 */
+  add('');                                                                       /* 프로젝트 없음 */
+  return filterPrj==='all'?names:names.filter(n=>n===filterPrj);
+}
+function renderProjectMatrix(dates){
+  const grid=document.getElementById('weekGrid'); grid.className='week-grid pm';
+  const wk=fmt(curMonday), prevWk=fmt(addDays(curMonday,-7));
+  let html='<div class="pm-h pm-corner">PROJECT</div>';
+  dates.forEach((d,i)=>{
+    const ds=fmt(d), vt=visible(ds), dn=vt.filter(t=>t.done).length;
+    const hol=holidayName(ds), flag=dueCountOn(ds), man=isManualDay(ds), hasLog=(data.logs[ds]||'').trim().length>0;
+    html+=`<div class="pm-h pm-dh${ds===todayStr?' today':''}${i>=5?' weekend':''}${hol?' holiday':''}" data-day="${ds}" title="눌러서 이 날 자세히 (업무 기록 · 타임라인 · 생각 쏟아내기)">
+      <div class="day-name">${DAYS[i]}<span class="date">${d.getMonth()+1}/${d.getDate()}</span></div>
+      ${hol?`<div style="text-align:center"><span class="hol-badge" style="margin:0">🎌 ${esc(hol)}</span></div>`:''}
+      <div class="head-right">${flag?`<span class="hflag">🚩${flag}</span>`:''}<button class="ord-btn${man?' on':''}" data-ord="${ds}" title="${man?'내가 정한 순서 — 드래그하거나 ⋯ 메뉴로 바꿔요 (눌러서 자동 정렬로)':'자동 정렬 중 — 눌러서 내 순서 직접 정하기'}">${man?'①②③':'↕'}</button><div class="day-cnt ${vt.length>0&&dn===vt.length?'full':''}">${dn}/${vt.length}</div><button class="pm-log${hasLog?' has':''}" data-log="${ds}" title="업무 기록">📝</button></div>
+    </div>`;
+  });
+  pmRows(dates).forEach((name,ri)=>{
+    const p=name?(data.projects||[]).find(x=>x.name===name):null;
+    const c=name?(p?pjColor(p):projColor(name)):'#8B95A1';
+    const g=wgGet(wk,name,false)||{done:false,items:[]};
+    const first=ri===0?' pm-row-first':'';
+    let rt=0, rd=0; const cells=dates.map(d=>{const ds=fmt(d); const ts=visible(ds).filter(t=>(t.project||'')===name); rt+=ts.length; rd+=ts.filter(t=>t.done).length; return {ds,ts};});
+    const prevG=!g.items.length?wgGet(prevWk,name,false):null;
+    const carry=prevG?prevG.items.filter(x=>!x.done).length:0;
+    const st=p&&p.status!=='active'?PJ_STATUS[p.status]:null;
+    html+=`<div class="pm-prj${g.done?' pdone':''}${first}" data-prj="${esc(name)}" style="--pc:${c}">
+      <div class="pm-ptop">
+        <span class="pm-pchk${g.done?' on':''}" data-wa="pdone" title="이번 주 이 프로젝트 마무리">${g.done?'✓':''}</span>
+        <span class="pm-pname${p?' link':''}" ${p?'data-wa="popen" title="프로젝트 열기"':''}>${name?esc(name):'프로젝트 없음'}</span>
+        ${st?`<span class="pm-pst" title="${st.label}">${st.icon}</span>`:''}${rt?`<span class="pm-pcnt">${rd}/${rt}</span>`:''}
+      </div>
+      <ul class="pm-goals">${g.items.map(it=>`<li class="${it.done?'done':''}" data-gid="${it.id}"><span class="pm-gchk" data-wa="gdone" title="목표 달성"></span><input class="pm-gin" value="${esc(it.text)}" title="고치기 · 다 지우면 삭제"></li>`).join('')}
+        <li><span class="pm-gdot">+</span><input class="pm-gnew" placeholder="이번 주 목표"></li></ul>
+      ${carry?`<button class="pm-carry" data-wa="carry" title="지난주에 못 끝낸 목표를 이번 주로 가져와요">↪ 지난주 목표 ${carry}개</button>`:''}
+    </div>`;
+    cells.forEach(({ds,ts})=>{
+      html+=`<div class="pm-cell${ds===todayStr?' today':''}${ts.length?'':' empty'}${first}" data-ds="${ds}" data-prj="${esc(name)}">
+        <div class="task-list" data-ds="${ds}">${renderTaskList(ts,ds,true)}</div>
+        <input class="add-input pm-add" data-ds="${ds}" data-prj="${esc(name)}" placeholder="+ 할일" title="14:00 = 시간 · ~8/15 = 기한 · ! = 높은 우선순위 (#이름을 쓰면 그 프로젝트로)">
+      </div>`;
+    });
+  });
+  html+=`<div class="pm-new"><input id="pmNewPrj" placeholder="+ 프로젝트 행 추가 (이름 입력 후 Enter)"><span>진행 중인 프로젝트와 이번 주 할일이 있는 프로젝트가 행으로 보여요 · 할일을 다른 칸으로 끌면 날짜·프로젝트가 함께 바뀌어요</span></div>`;
+  grid.innerHTML=html;
+}
+function pmAddGoal(name,text){
+  text=(text||'').trim(); if(!text)return;
+  const g=wgGet(fmt(curMonday),name,true); g.items.push({id:'g'+uid(),text,done:false}); save(); renderWeek();
+}
+function pmNewProject(name){
+  name=(name||'').trim(); if(!name)return;
+  const ex=(data.projects||[]).find(p=>p.name===name);
+  if(ex){ if(ex.status!=='active'){ex.status='active'; save(); renderAll();} toast('📁 이미 있는 프로젝트예요: '+name); return; }
+  data.projects.push({id:'p'+uid(),name,status:'active',note:'',start:todayStr,due:'',createdAt:todayStr,sections:[]});
+  save(); renderAll(); updatePrjDatalist(); toast('📁 프로젝트를 만들었어요: '+name);
+}
+function pmFocus(sel,match){
+  setTimeout(()=>{const el=[...document.getElementById('weekGrid').querySelectorAll(sel)].find(match); if(el)el.focus();},0);
 }
 
 /* 기간 막대: 할일 날짜~기한이 여러 날에 걸치면 주간 상단에 띠로 표시 */
@@ -1642,7 +1759,7 @@ function renderPeriodStrip(dates){
     let row=rowEnds.findIndex(x=>x<c1);
     if(row<0){row=rowEnds.length; rowEnds.push(c2);} else rowEnds[row]=c2;
     const di=ddayInfo(t.due);
-    html+=`<div class="pbar ${t.done?'done':''}" style="grid-column:${c1+1}/${c2+2}; grid-row:${row+1}; background:${barColor(t)}"
+    html+=`<div class="pbar ${t.done?'done':''}" style="grid-column:${c1+2}/${c2+3}; grid-row:${row+1}; background:${barColor(t)}"
       data-ds="${ds}" data-id="${t.id}" title="${esc(t.text)} (${md(ds)}~${md(t.due)})">
       ${ds<ws?'<span>◀</span>':''}${t.project?`<span class="pb-prj">${esc(t.project)}</span>`:''}<span class="pb-txt">${esc(t.text)}</span>${t.done?'':`<span class="pb-dday">${di.label}</span>`}${t.due>we?'<span>▶</span>':''}
     </div>`;
@@ -2112,15 +2229,18 @@ function dropAnchor(e){
 document.addEventListener('dragend',clearDragUI);
 document.addEventListener('drop',()=>setTimeout(clearDragUI,0));
 _wg.addEventListener('dragend',clearDragUI);
-_wg.addEventListener('dragover',e=>{const col=e.target.closest('.day-col'); if(!col)return; e.preventDefault(); e.dataTransfer.dropEffect='move';
-  document.querySelectorAll('.day-col.drop-over').forEach(x=>{if(x!==col)x.classList.remove('drop-over');}); col.classList.add('drop-over');
+_wg.addEventListener('dragover',e=>{const col=e.target.closest('.pm-cell'); if(!col)return; e.preventDefault(); e.dataTransfer.dropEffect='move';
+  document.querySelectorAll('.pm-cell.drop-over').forEach(x=>{if(x!==col)x.classList.remove('drop-over');}); col.classList.add('drop-over');
   const a=dropAnchor(e);
   document.querySelectorAll('.ins-before,.ins-after').forEach(x=>{if(!a||x!==a.el)x.classList.remove('ins-before','ins-after');});
   if(a){a.el.classList.toggle('ins-before',a.before); a.el.classList.toggle('ins-after',!a.before);}});
-_wg.addEventListener('drop',e=>{const col=e.target.closest('.day-col'); if(!col)return; e.preventDefault();
+_wg.addEventListener('drop',e=>{const col=e.target.closest('.pm-cell'); if(!col)return; e.preventDefault();
   const a=dropAnchor(e); clearDragUI();
   try{const d=JSON.parse(e.dataTransfer.getData('text/plain'));
     blDropFix(d,col.dataset.ds);
+    /* 다른 프로젝트 행에 놓으면 프로젝트도 바뀜 (moveTaskTo 가 저장·렌더하므로 그 전에) */
+    const tk=findTask(d.ds,d.id), prj=col.dataset.prj||'';
+    if(tk&&(tk.project||'')!==prj){ if(prj)tk.project=prj; else delete tk.project; }
     moveTaskTo(d.ds,d.id,col.dataset.ds,a?{id:a.id,before:a.before}:null);
   }catch(err){}});
 document.getElementById('dmTasks').addEventListener('click',taskClick);
@@ -2153,12 +2273,55 @@ _wb.addEventListener('drop',e=>{const day=e.target.closest('.wg-day'); if(!day)r
     moveTaskTo(d.ds,d.id,day.dataset.ds,a?{id:a.id,before:a.before}:null);
   }catch(err){}});
 _wg.addEventListener('keydown',e=>{
-  if(e.target.classList.contains('add-input')&&e.key==='Enter'){
-    const ds=e.target.dataset.ds, cat=addCat[ds]||(filterCat!=='all'?filterCat:'work');
-    addTask(ds,e.target.value,'mid',cat); e.target.value='';
-    /* 위젯에도 같은 data-ds 입력칸이 있으므로 주간 그리드 안에서만 찾음 */
-    setTimeout(()=>{const inp=_wg.querySelector(`.add-input[data-ds="${ds}"]`); if(inp)inp.focus();},0);
-  }});
+  if(e.isComposing||e.keyCode===229)return;   /* 한글 조합 중 Enter 무시 */
+  const el=e.target;
+  if(el.classList.contains('add-input')&&e.key==='Enter'){
+    const ds=el.dataset.ds, cellPrj=el.dataset.prj||'', cat=filterCat!=='all'?filterCat:'work';
+    const txt=el.value;
+    /* 직접 #이름을 적었으면 그 프로젝트, 아니면 이 행의 프로젝트 */
+    addTask(ds,txt,'mid',cat,'',/#\S/.test(txt)?'':cellPrj); el.value='';
+    /* 위젯에도 같은 data-ds 입력칸이 있으므로 주간 표 안에서만 찾음 */
+    pmFocus('.add-input',x=>x.dataset.ds===ds&&(x.dataset.prj||'')===cellPrj);
+    return;
+  }
+  if(el.id==='pmNewPrj'&&e.key==='Enter'){pmNewProject(el.value); pmFocus('#pmNewPrj',()=>true); return;}
+  if(el.classList.contains('pm-gnew')&&e.key==='Enter'){
+    const name=el.closest('.pm-prj').dataset.prj||'';
+    pmAddGoal(name,el.value);
+    pmFocus('.pm-gnew',x=>(x.closest('.pm-prj').dataset.prj||'')===name); return;
+  }
+  if(el.classList.contains('pm-gin')&&(e.key==='Enter'||e.key==='Escape')){el.blur(); return;}
+});
+/* 목표 고치기: 바뀐 값만 저장 (다시 그리지 않아 다른 칸 클릭이 끊기지 않음), 다 지우면 삭제 */
+_wg.addEventListener('change',e=>{
+  const el=e.target; if(!el.classList.contains('pm-gin'))return;
+  const name=el.closest('.pm-prj').dataset.prj||'', wk=fmt(curMonday), gid=el.closest('li').dataset.gid;
+  const g=wgGet(wk,name,false); if(!g)return; const it=g.items.find(x=>x.id===gid); if(!it)return;
+  const v=el.value.trim();
+  if(v){it.text=v; save();}
+  else{g.items=g.items.filter(x=>x.id!==gid); wgTidy(wk,name); save(); renderWeek();}
+});
+_wg.addEventListener('click',e=>{
+  const w=e.target.closest('[data-wa]');
+  if(w){
+    const row=w.closest('.pm-prj'), name=row.dataset.prj||'', wk=fmt(curMonday), a=w.dataset.wa;
+    if(a==='pdone'){const g=wgGet(wk,name,true); g.done=!g.done; wgTidy(wk,name); save(); renderWeek();}
+    else if(a==='gdone'){const g=wgGet(wk,name,false); const it=g&&g.items.find(x=>x.id===w.closest('li').dataset.gid); if(it){it.done=!it.done; save(); renderWeek();}}
+    else if(a==='carry'){
+      const pg=wgGet(fmt(addDays(curMonday,-7)),name,false); if(!pg)return;
+      const g=wgGet(wk,name,true); pg.items.filter(x=>!x.done).forEach(x=>g.items.push({id:'g'+uid(),text:x.text,done:false}));
+      save(); renderWeek(); toast('↪ 지난주 목표를 가져왔어요');
+    }
+    else if(a==='popen'){
+      const p=(data.projects||[]).find(x=>x.name===name); if(!p)return;
+      pjOpenId=p.id; currentView='project';
+      document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.view==='project'));
+      updateViews();
+    }
+    return;
+  }
+  const dh=e.target.closest('.pm-dh'); if(dh&&!e.target.closest('button'))openDay(dh.dataset.day);
+});
 document.getElementById('monthGrid').addEventListener('click',e=>{
   const b=e.target.closest('.mbar'); if(b){openEdit(b.dataset.ds,b.dataset.id); return;}
   const c=e.target.closest('.mcell'); if(c)openDay(c.dataset.ds);});
@@ -2463,6 +2626,8 @@ function pjRename(p,newName){
   if(data.projects.some(x=>x!==p&&x.name===newName)){alert('같은 이름의 프로젝트가 이미 있어요'); renderPj(); return;}
   const old=p.name;
   for(const ds in data.tasks)for(const t of data.tasks[ds]) if(t.project===old)t.project=newName;
+  /* 주간 목표도 프로젝트 이름으로 묶여 있으니 함께 옮김 */
+  for(const wk in (data.wgoals||{})){const w=data.wgoals[wk]; if(w[old]&&!w[newName]){w[newName]=w[old]; delete w[old];}}
   p.name=newName; save(); renderAll();
 }
 function pjGotoWeek(ds){
