@@ -2352,8 +2352,13 @@ _wg.addEventListener('drop',e=>{
     blDropFix(d,col.dataset.ds);
     /* 다른 프로젝트 행에 놓으면 프로젝트도 바뀜 (moveTaskTo 가 저장·렌더하므로 그 전에) */
     if(!findTask(d.ds,d.id)){toast('⚠️ 끌어온 것을 할일로 알아보지 못했어요 — 할일 카드를 잡고 다시 끌어보세요'); return;}
-    setTaskProject(findTask(d.ds,d.id),col.dataset.prj||'');
+    const prj=col.dataset.prj||'', changed=setTaskProject(findTask(d.ds,d.id),prj);
+    if(changed) toast(prj?`📁 '${prj}' 프로젝트로 옮겼어요`:'📁 프로젝트에서 뺐어요');
+    /* 같은 날 다른 프로젝트 행에 놓은 경우: moveTaskTo 는 '같은 날·같은 자리'면 아무것도 안 하고 끝나서
+       (저장·다시 그리기도 안 함) 프로젝트만 바뀐 채 화면에 안 보였음 → 여기서 직접 저장·렌더 */
+    if(d.ds===col.dataset.ds&&(!a||a.id===d.id)){ if(changed){save(); renderAll();} return; }
     moveTaskTo(d.ds,d.id,col.dataset.ds,a?{id:a.id,before:a.before}:null);
+    if(changed&&d.ds===col.dataset.ds) renderAll();   /* 같은 날 순서만 바뀌는 경우에도 확실히 다시 그림 */
   }catch(err){console.error('할일 옮기기 실패',err); toast('⚠️ 옮기지 못했어요 — 할일 카드를 잡고 다시 끌어보세요');}});
 document.getElementById('dmTasks').addEventListener('click',taskClick);
 /* ===== 위젯 모드: 추가 · 순서 조정 (주간 뷰와 같은 동작) ===== */
