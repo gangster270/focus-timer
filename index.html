@@ -202,7 +202,8 @@
   .pm-cell:hover .pm-add,.pm-cell .pm-add:focus{opacity:1;}
   .pm-cell.empty .pm-add{margin-top:auto;}
   @media (hover:none){.pm-cell .add-input.pm-add{opacity:1; border-color:transparent; background:transparent;}}   /* 아이폰: 호버가 없으니 항상 */
-  .pm-cell.drop-over{outline:2px dashed var(--primary); outline-offset:-3px; background:var(--primary-light);}
+  .pm-cell.drop-over,.pm-prj.drop-over,.pw-prj.drop-over,.pw-task.drop-over,.pj-card.drop-over,#pjDetail.drop-over{outline:2px dashed var(--primary); outline-offset:-3px; background:var(--primary-light);}
+  .pw-task[draggable="true"],.pw-blk[draggable="true"]{cursor:grab;}
   .pm-ptop{display:flex; align-items:center; gap:6px; min-width:0;}
   .pm-pchk{width:17px; height:17px; border:2px solid var(--pc); border-radius:4px; flex-shrink:0; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; font-size:11px; font-weight:900;}
   .pm-pchk.on{background:var(--pc);}
@@ -1771,7 +1772,7 @@ function renderProjectMatrix(dates){
     const prevG=!g.items.length?wgGet(prevWk,name,false):null;
     const carry=prevG?prevG.items.filter(x=>!x.done).length:0;
     const st=p&&p.status!=='active'?PJ_STATUS[p.status]:null;
-    html+=`<div class="pm-prj${g.done?' pdone':''}${first}" data-prj="${esc(name)}" style="--pc:${c}">
+    html+=`<div class="pm-prj${g.done?' pdone':''}${first}" data-prj="${esc(name)}" style="--pc:${c}" title="할일을 여기에 끌어 놓으면 날짜는 그대로 이 프로젝트로 옮겨요">
       <div class="pm-ptop">
         <span class="pm-pchk${g.done?' on':''}" data-wa="pdone" title="이번 주 이 프로젝트 마무리">${g.done?'✓':''}</span>
         <span class="pm-pname${p?' link':''}" ${p?'data-wa="popen" title="프로젝트 열기"':''}>${name?esc(name):'프로젝트 없음'}</span>
@@ -1788,9 +1789,31 @@ function renderProjectMatrix(dates){
       </div>`;
     });
   });
-  html+=`<div class="pm-new"><input id="pmNewPrj" placeholder="+ 프로젝트 행 추가 (이름 입력 후 Enter)"><span>진행 중인 프로젝트와 이번 주 할일이 있는 프로젝트가 행으로 보여요 · 할일을 다른 칸으로 끌면 날짜·프로젝트가 함께 바뀌어요</span></div>`;
+  html+=`<div class="pm-new"><input id="pmNewPrj" placeholder="+ 프로젝트 행 추가 (이름 입력 후 Enter)"><span>진행 중인 프로젝트와 이번 주 할일이 있는 프로젝트가 행으로 보여요 · 할일을 다른 칸으로 끌면 날짜·프로젝트가 함께, 왼쪽 프로젝트 이름 칸에 놓으면 날짜는 그대로 프로젝트만 바뀌어요</span></div>`;
   grid.innerHTML=html;
 }
+/* ===== 할일을 프로젝트로 옮기기 (끌어 놓기 공통) =====
+   날짜는 그대로 두고 t.project 만 바꿈. 다른 프로젝트 체크리스트 항목과 묶여 있었다면 그 연결은 끊음 */
+function setTaskProject(t,name){
+  name=name||''; if(!t||(t.project||'')===name) return false;
+  (data.projects||[]).forEach(p=>pjItems(p).forEach(({i})=>{ if(i.taskId===t.id){delete i.taskId; i.sent=false; i.due='';} }));
+  delete t.pjItem;
+  if(name)t.project=name; else delete t.project;
+  return true;
+}
+/* d = 끌어온 것: {ds,id} 할일 하나, 또는 {pwrow} 시간 배치 표의 한 줄(이번 주 같은 이름 할일 전부) */
+function dropToProject(d,name){
+  let list=[];
+  if(d&&d.pwrow){ if(typeof pwRowTasks==='function') list=pwRowTasks(d.pwrow); }
+  else if(d&&d.ds&&d.id){ const t=findTask(d.ds,d.id); if(t)list=[t]; }
+  let n=0; list.forEach(t=>{if(setTaskProject(t,name))n++;});
+  if(!n)return;
+  save(); updatePrjDatalist(); renderAll();
+  if(!widgetMode&&currentView==='project')renderPj();
+  toast(name?`📁 '${name}' 프로젝트로 옮겼어요${n>1?` (${n}개)`:''}`:'📁 프로젝트에서 뺐어요');
+}
+function dragPayload(e){try{return JSON.parse(e.dataTransfer.getData('text/plain'));}catch(x){return null;}}
+function markDrop(el,sel){document.querySelectorAll(sel+'.drop-over').forEach(x=>{if(x!==el)x.classList.remove('drop-over');}); el.classList.add('drop-over');}
 function pmAddGoal(name,text){
   text=(text||'').trim(); if(!text)return;
   const g=wgGet(fmt(curMonday),name,true); g.items.push({id:'g'+uid(),text,done:false}); save(); renderWeek();
@@ -2302,18 +2325,24 @@ function dropAnchor(e){
 document.addEventListener('dragend',clearDragUI);
 document.addEventListener('drop',()=>setTimeout(clearDragUI,0));
 _wg.addEventListener('dragend',clearDragUI);
-_wg.addEventListener('dragover',e=>{const col=e.target.closest('.pm-cell'); if(!col)return; e.preventDefault(); e.dataTransfer.dropEffect='move';
-  document.querySelectorAll('.pm-cell.drop-over').forEach(x=>{if(x!==col)x.classList.remove('drop-over');}); col.classList.add('drop-over');
+_wg.addEventListener('dragover',e=>{
+  const pj=e.target.closest('.pm-prj');
+  if(pj){e.preventDefault(); e.dataTransfer.dropEffect='move'; markDrop(pj,'.pm-prj,.pm-cell'); return;}
+  const col=e.target.closest('.pm-cell'); if(!col)return; e.preventDefault(); e.dataTransfer.dropEffect='move';
+  markDrop(col,'.pm-prj,.pm-cell');
   const a=dropAnchor(e);
   document.querySelectorAll('.ins-before,.ins-after').forEach(x=>{if(!a||x!==a.el)x.classList.remove('ins-before','ins-after');});
   if(a){a.el.classList.toggle('ins-before',a.before); a.el.classList.toggle('ins-after',!a.before);}});
-_wg.addEventListener('drop',e=>{const col=e.target.closest('.pm-cell'); if(!col)return; e.preventDefault();
+_wg.addEventListener('drop',e=>{
+  /* 왼쪽 프로젝트 칸에 놓으면 날짜는 그대로, 프로젝트만 바꿈 */
+  const pj=e.target.closest('.pm-prj');
+  if(pj){e.preventDefault(); clearDragUI(); dropToProject(dragPayload(e),pj.dataset.prj||''); return;}
+  const col=e.target.closest('.pm-cell'); if(!col)return; e.preventDefault();
   const a=dropAnchor(e); clearDragUI();
   try{const d=JSON.parse(e.dataTransfer.getData('text/plain'));
     blDropFix(d,col.dataset.ds);
     /* 다른 프로젝트 행에 놓으면 프로젝트도 바뀜 (moveTaskTo 가 저장·렌더하므로 그 전에) */
-    const tk=findTask(d.ds,d.id), prj=col.dataset.prj||'';
-    if(tk&&(tk.project||'')!==prj){ if(prj)tk.project=prj; else delete tk.project; }
+    setTaskProject(findTask(d.ds,d.id),col.dataset.prj||'');
     moveTaskTo(d.ds,d.id,col.dataset.ds,a?{id:a.id,before:a.before}:null);
   }catch(err){}});
 document.getElementById('dmTasks').addEventListener('click',taskClick);
@@ -2750,7 +2779,7 @@ function renderPjBoard(){
     html+=`<div class="pj-group-title" style="color:var(--sub)">🏷 플래너 태그에서 발견 <b>${ghosts.length}</b></div><div class="pj-grid">`+
       ghosts.map(n=>{
         const c=projColor(n), lt=pjLinkedTasks(n), d=lt.filter(x=>x.t.done).length;
-        return `<div class="pj-card ghost" style="border-top-color:${c}">
+        return `<div class="pj-card ghost" data-gname="${esc(n)}" style="border-top-color:${c}">
           <div class="pj-card-top"><span class="pj-name">${esc(n)}</span></div>
           <div class="pj-card-meta">플래너 할일 ${d}/${lt.length} 완료</div>
           <button class="act-btn" data-pa="ghost-add" data-name="${esc(n)}">📁 프로젝트로 관리하기</button>
@@ -2844,6 +2873,14 @@ function pjCreateFromToolbar(){
   addProject(name,document.getElementById('pjNewTpl').value);
 }
 const pjView=document.getElementById('projectView');
+function pjDropTarget(e){
+  const card=e.target.closest('.pj-card');
+  if(card){const p=card.dataset.pid?pjFind(card.dataset.pid):null; const name=p?p.name:card.dataset.gname; return name?{el:card,name}:null;}
+  const det=e.target.closest('#pjDetail'); const p=pjOpenId&&pjFind(pjOpenId);
+  return det&&p?{el:det,name:p.name}:null;
+}
+pjView.addEventListener('dragover',e=>{const t=pjDropTarget(e); if(!t)return; e.preventDefault(); e.dataTransfer.dropEffect='move'; markDrop(t.el,'.pj-card,#pjDetail');});
+pjView.addEventListener('drop',e=>{const t=pjDropTarget(e); if(!t)return; const d=dragPayload(e); if(!d||(!d.id&&!d.pwrow))return; e.preventDefault(); clearDragUI(); dropToProject(d,t.name);});
 pjView.addEventListener('click',function(e){
   const pa=e.target.closest('[data-pa]');
   if(!pa){
@@ -3035,7 +3072,7 @@ function renderPjWeek(){
       const html=arr.map(t=>{
         const dur=pwDur(t); sum+=dur; dayTot[k]+=dur;
         const tl=timeLabel(t); const c=t.color||color;
-        return `<span class="pw-blk ${tl?'':'notime'} ${t.done?'done':''}" data-ds="${ds}" data-id="${t.id}" style="background:${c}" title="${esc(taskBody(t))}${tl?' · '+tl:''}">${tl?esc(tl.replace('~','–')):'시간 미정'}${dur?`<span class="dur">${pwDurLabel(dur)}</span>`:''}</span>`;
+        return `<span class="pw-blk ${tl?'':'notime'} ${t.done?'done':''}" draggable="true" data-ds="${ds}" data-id="${t.id}" style="background:${c}" title="${esc(taskBody(t))}${tl?' · '+tl:''}">${tl?esc(tl.replace('~','–')):'시간 미정'}${dur?`<span class="dur">${pwDurLabel(dur)}</span>`:''}</span>`;
       }).join('');
       return `<td class="pw-cell ${ds===todayStr?'today':''} ${k>=5?'weekend':''}" data-row="${esc(key)}" data-ds="${ds}">${html}</td>`;
     }).join('');
@@ -3062,13 +3099,13 @@ function renderPjWeek(){
       pwRows[r.key]={p,i:r.i||null,name:r.name,text:r.text};
       const {cells,sum}=cellsHTML(r.key,color); prjSum+=sum;
       const showSec=r.s&&(p.sections||[]).length>1&&r.s.id!==lastSec; if(r.s)lastSec=r.s.id;
-      rowHtml.push(`<td class="pw-task ${r.i&&r.i.done?'done':''}" data-row="${esc(r.key)}">
+      rowHtml.push(`<td class="pw-task ${r.i&&r.i.done?'done':''}" data-row="${esc(r.key)}" data-grp="${esc(g.name)}"${r.i?'':' draggable="true" title="끌어서 다른 프로젝트에 놓으면 이번 주 이 할일이 그 프로젝트로 옮겨가요"'}>
         ${showSec?`<div class="pw-sec">${esc(r.s.name)}</div>`:''}
         <div class="pw-task-in">${r.i?'<span class="scheck" data-pw="item-toggle"></span>':'<span class="pw-bullet">•</span>'}<span class="pw-ttxt">${esc(r.text)}</span></div>
         ${sum?`<div class="pw-tsum">${pwDurLabel(sum)}</div>`:''}</td>${cells}`);
     });
     const nRows=rows.length+1; /* +1: 할일 추가 줄 */
-    const left=`<td class="pw-prj end" rowspan="${nRows}" style="border-left-color:${color}">
+    const left=`<td class="pw-prj end" rowspan="${nRows}" data-grp="${esc(g.name)}" style="border-left-color:${color}">
       <div class="pw-prj-name" data-pw="open" data-name="${esc(g.name)}" title="${p?'프로젝트 상세로':'📁 프로젝트로 관리하기'}" style="color:${color}">${esc(g.name)}</div>
       <div class="pw-prj-meta">${pr?`진행 <b>${pr.done}/${pr.total}</b>${p.due?` · 목표 ${md(p.due)}`:''}`:'<span>플래너 태그만 있음</span>'}<br>이번 주 <b>${pwDurLabel(prjSum)||'0h'}</b></div>
       ${pr?`<div class="pj-bar"><i style="width:${pr.pct}%;background:${color}"></i></div>`:''}</td>`;
@@ -3084,8 +3121,8 @@ function renderPjWeek(){
     if(pwShowNone){
       const rh=noneTexts.map(tx=>{const key=pwRowKey('',null,tx); pwRows[key]={p:null,i:null,name:'',text:tx};
         const {cells,sum}=cellsHTML(key,'#8B95A1');
-        return `<td class="pw-task" data-row="${esc(key)}"><div class="pw-task-in"><span class="pw-bullet">•</span><span class="pw-ttxt">${esc(tx)}</span></div>${sum?`<div class="pw-tsum">${pwDurLabel(sum)}</div>`:''}</td>${cells}`;});
-      body+=`<tr class="${rh.length===1?'end':''}"><td class="pw-prj end" rowspan="${rh.length}" style="border-left-color:#B0B8C1"><div class="pw-prj-name" style="color:var(--sub);cursor:default;text-decoration:none">프로젝트 없음</div><div class="pw-prj-meta"><button class="pw-none-btn" data-pw="none">▴ 접기</button></div></td>${rh[0]}</tr>`+rh.slice(1).map((h,k)=>`<tr class="${k===rh.length-2?'end':''}">${h}</tr>`).join('');
+        return `<td class="pw-task" data-row="${esc(key)}" data-grp="" draggable="true" title="끌어서 프로젝트에 놓으면 이번 주 이 할일이 그 프로젝트로 들어가요"><div class="pw-task-in"><span class="pw-bullet">•</span><span class="pw-ttxt">${esc(tx)}</span></div>${sum?`<div class="pw-tsum">${pwDurLabel(sum)}</div>`:''}</td>${cells}`;});
+      body+=`<tr class="${rh.length===1?'end':''}"><td class="pw-prj end" rowspan="${rh.length}" data-grp="" style="border-left-color:#B0B8C1"><div class="pw-prj-name" style="color:var(--sub);cursor:default;text-decoration:none">프로젝트 없음</div><div class="pw-prj-meta"><button class="pw-none-btn" data-pw="none">▴ 접기</button></div></td>${rh[0]}</tr>`+rh.slice(1).map((h,k)=>`<tr class="${k===rh.length-2?'end':''}">${h}</tr>`).join('');
     }else{
       body+=`<tr class="end"><td colspan="9" class="pw-newprj"><button class="pw-none-btn" data-pw="none">▾ 프로젝트 없는 이번 주 할일 ${noneTexts.length}개 보기</button></td></tr>`;
     }
@@ -3168,6 +3205,28 @@ function pwEnsureProject(name){
   if(!(p.sections||[]).length)p.sections=[{id:'ps'+uid(),name:'할 일',items:[]}];
   return p;
 }
+/* 시간 배치 표의 한 줄 = 이번 주에 같은 프로젝트·같은 내용인 할일들 */
+function pwRowTasks(key){
+  const row=pwRows[key], out=[]; if(!row)return out;
+  weekDates().map(fmt).forEach(ds=>rawTasks(ds).forEach(t=>{
+    if(row.i?(t.pjItem===row.i.id||t.id===row.i.taskId):pwRowKey(t.project||'',null,taskBody(t).trim())===key) out.push(t);
+  }));
+  return out;
+}
+(function(){
+  const box=document.getElementById('pjWeek');
+  box.addEventListener('dragstart',e=>{
+    const b=e.target.closest('.pw-blk'), r=e.target.closest('.pw-task[draggable="true"]');
+    const d=b?{ds:b.dataset.ds,id:b.dataset.id}:r?{pwrow:r.dataset.row}:null; if(!d)return;
+    pwClosePop(); e.dataTransfer.setData('text/plain',JSON.stringify(d)); e.dataTransfer.effectAllowed='move';
+    (b||r).classList.add('dragging'); document.body.classList.add('dragging-task');
+  });
+  box.addEventListener('dragend',clearDragUI);
+  box.addEventListener('dragover',e=>{const t=e.target.closest('.pw-prj[data-grp],.pw-task[data-grp]'); if(!t)return;
+    e.preventDefault(); e.dataTransfer.dropEffect='move'; markDrop(t,'.pw-prj,.pw-task');});
+  box.addEventListener('drop',e=>{const t=e.target.closest('.pw-prj[data-grp],.pw-task[data-grp]'); if(!t)return;
+    e.preventDefault(); clearDragUI(); dropToProject(dragPayload(e),t.dataset.grp||'');});
+})();
 document.getElementById('wLayoutSeg').addEventListener('click',e=>{const b=e.target.closest('button[data-l]'); if(b)pwSetLayout(b.dataset.l);});
 document.getElementById('pjWeek').addEventListener('click',e=>{
   const pw=e.target.closest('[data-pw]');
