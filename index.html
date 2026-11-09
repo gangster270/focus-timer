@@ -44,6 +44,9 @@
   .navbtn{border:1px solid var(--border); background:#fff; width:36px; height:36px; border-radius:10px; cursor:pointer;
     font-size:16px; color:var(--text); transition:.15s; display:flex; align-items:center; justify-content:center;}
   .navbtn:hover{background:var(--bg);}
+  /* 할일을 끄는 동안 ‹ › 버튼 = 지난 주로 / 다음 주로 놓는 곳 */
+  body.dragging-task #wPrev,body.dragging-task #wNext{border:2px dashed var(--primary); color:var(--primary); background:var(--primary-light);}
+  #wPrev.over,#wNext.over{background:var(--primary)!important; color:#fff!important; transform:scale(1.12);}
   .today-btn{border:1px solid var(--border); background:#fff; padding:8px 14px; border-radius:10px; cursor:pointer;
     font-size:13px; font-weight:600; color:var(--text); font-family:inherit; transition:.15s; white-space:nowrap;}
   .today-btn:hover{background:var(--bg);}
@@ -653,6 +656,9 @@
   .weekdrop.left{left:10px;} .weekdrop.right{right:10px;}
   body.memo-open .weekdrop.right{right:332px;}
   body.dragging-task .weekdrop{display:flex;}
+  /* 화면 가장자리에 뜨는 '지난 주로/다음 주로'는 위젯에서만. 주간 표에서는 왼쪽 PROJECT 칸을 가려
+     프로젝트로 놓으려던 할일이 지난 주로 가버렸음 → 주간 탭에선 맨 위 ‹ › 버튼에 놓기 */
+  body:not(.widget-mode) .weekdrop{display:none !important;}
   .weekdrop.over{background:var(--primary); color:#fff; transform:translateY(-50%) scale(1.05);}
 
   .hidden{display:none !important;}
@@ -1632,6 +1638,8 @@ function moveTaskByDays(srcDs,id,days){
   const nd=fmt(addDays(new Date(srcDs+'T00:00:00'),days));
   if(!data.tasks[nd]) data.tasks[nd]=[];
   data.tasks[nd].push(tk); save(); renderAll();
+  /* 화면에서 사라지는 이동이라 꼭 알려줌 */
+  toast(`📅 ${dayLabel(nd)}(${days<0?'지난 주':'다음 주'})로 옮겼어요: ${taskBody(tk)}`);
 }
 
 /* ===== 렌더 ===== */
@@ -1806,8 +1814,9 @@ function dropToProject(d,name){
   let list=[];
   if(d&&d.pwrow){ if(typeof pwRowTasks==='function') list=pwRowTasks(d.pwrow); }
   else if(d&&d.ds&&d.id){ const t=findTask(d.ds,d.id); if(t)list=[t]; }
+  if(!list.length){toast('⚠️ 끌어온 것을 할일로 알아보지 못했어요 — 할일 카드를 잡고 다시 끌어보세요'); return;}
   let n=0; list.forEach(t=>{if(setTaskProject(t,name))n++;});
-  if(!n)return;
+  if(!n){toast(`이미 '${name||'프로젝트 없음'}'에 있는 할일이에요`); return;}
   save(); updatePrjDatalist(); renderAll();
   if(!widgetMode&&currentView==='project')renderPj();
   toast(name?`📁 '${name}' 프로젝트로 옮겼어요${n>1?` (${n}개)`:''}`:'📁 프로젝트에서 뺐어요');
@@ -2314,7 +2323,7 @@ function taskClick(e){
 const _wg=document.getElementById('weekGrid');
 _wg.addEventListener('click',taskClick);
 _wg.addEventListener('dragstart',e=>{const t=e.target.closest('.task'); if(t&&t.dataset.id){e.dataTransfer.setData('text/plain',JSON.stringify({ds:t.dataset.ds,id:t.dataset.id})); e.dataTransfer.effectAllowed='move'; t.classList.add('dragging'); document.body.classList.add('dragging-task');}});
-function clearDragUI(){document.querySelectorAll('.dragging').forEach(x=>x.classList.remove('dragging')); document.querySelectorAll('.drop-over,.weekdrop.over').forEach(x=>x.classList.remove('drop-over','over')); document.querySelectorAll('.ins-before,.ins-after').forEach(x=>x.classList.remove('ins-before','ins-after')); document.body.classList.remove('dragging-task');}
+function clearDragUI(){document.querySelectorAll('.dragging').forEach(x=>x.classList.remove('dragging')); document.querySelectorAll('.drop-over,.weekdrop.over,.navbtn.over').forEach(x=>x.classList.remove('drop-over','over')); document.querySelectorAll('.ins-before,.ins-after').forEach(x=>x.classList.remove('ins-before','ins-after')); document.body.classList.remove('dragging-task');}
 /* 드롭 지점의 앞/뒤 판정 → 같은 날 안에서 순서 조정 */
 function dropAnchor(e){
   const el=e.target.closest('.task'); if(!el||!el.dataset.id)return null;
@@ -2342,9 +2351,10 @@ _wg.addEventListener('drop',e=>{
   try{const d=JSON.parse(e.dataTransfer.getData('text/plain'));
     blDropFix(d,col.dataset.ds);
     /* 다른 프로젝트 행에 놓으면 프로젝트도 바뀜 (moveTaskTo 가 저장·렌더하므로 그 전에) */
+    if(!findTask(d.ds,d.id)){toast('⚠️ 끌어온 것을 할일로 알아보지 못했어요 — 할일 카드를 잡고 다시 끌어보세요'); return;}
     setTaskProject(findTask(d.ds,d.id),col.dataset.prj||'');
     moveTaskTo(d.ds,d.id,col.dataset.ds,a?{id:a.id,before:a.before}:null);
-  }catch(err){}});
+  }catch(err){console.error('할일 옮기기 실패',err); toast('⚠️ 옮기지 못했어요 — 할일 카드를 잡고 다시 끌어보세요');}});
 document.getElementById('dmTasks').addEventListener('click',taskClick);
 /* ===== 위젯 모드: 추가 · 순서 조정 (주간 뷰와 같은 동작) ===== */
 const _wb=document.getElementById('widgetBody');
@@ -3323,6 +3333,8 @@ document.getElementById('importFile').onchange=e=>{const f=e.target.files[0]; if
   }
   setup(document.getElementById('dropPrevWeek'),-1);
   setup(document.getElementById('dropNextWeek'),1);
+  setup(document.getElementById('wPrev'),-1);
+  setup(document.getElementById('wNext'),1);
 })();
 
 /* ===== 메모 (메모지 카드) ===== */
