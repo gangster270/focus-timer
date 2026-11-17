@@ -230,6 +230,40 @@
   .pm-gdot{width:13px; text-align:center; color:#B0B8C1; flex-shrink:0; font-size:12px;}
   .pm-carry{align-self:flex-start; border:1px dashed var(--border); background:none; color:var(--sub); font-family:inherit; font-size:11px; font-weight:600; border-radius:7px; padding:2px 7px; cursor:pointer;}
   .pm-carry:hover{color:var(--primary); border-color:var(--primary);}
+  .pm-corner{gap:6px;}
+  .pm-cfg-btn{border:1px solid var(--border); background:#fff; border-radius:7px; cursor:pointer; font-size:12px; padding:2px 6px; color:var(--sub); font-family:inherit;}
+  .pm-cfg-btn:hover,.pm-cfg-btn.on{border-color:var(--primary); color:var(--primary);}
+  .pm-move{display:none; gap:2px; flex-shrink:0;}
+  .pm-prj:hover .pm-move{display:flex;}
+  .pm-move button{border:1px solid var(--border); background:#fff; border-radius:5px; width:18px; height:18px; padding:0; font-size:9px; line-height:1; cursor:pointer; color:var(--sub);}
+  .pm-move button:hover{border-color:var(--primary); color:var(--primary);}
+  @media (hover:none){.pm-move{display:flex;}}
+  .pm-prjx{padding:9px 10px 8px; border-top:2px solid var(--text); background:#fff; position:sticky; left:0; z-index:2; min-width:0;}
+  .pm-prjx .pm-pname{color:var(--sub);}
+  .pm-prjx small{display:block; font-size:10.5px; color:var(--sub); margin-top:3px; line-height:1.4;}
+  .pm-cell.pm-oth .prj-chip{display:inline-block;}
+  .pm-donebar{grid-column:1/-1; border-top:2px solid var(--text); padding:8px 12px; background:#FAFBFC; font-size:12.5px; font-weight:700; color:var(--done); cursor:pointer; user-select:none;}
+  .pm-donebar:hover{background:#F0FAF6;}
+  .pm-prj.pdone,.pm-cell.pdone{background:#FAFBFC;}
+  #pmCfgPop{position:fixed; z-index:1200; width:330px; max-height:70vh; display:flex; flex-direction:column; background:var(--card); border-radius:14px; padding:14px;
+    box-shadow:0 10px 30px rgba(0,0,0,.18), 0 0 0 1px var(--border);}
+  #pmCfgPop .pc-title{font-size:14px; font-weight:800;}
+  #pmCfgPop .pc-sub{font-size:11.5px; color:var(--sub); margin:3px 0 10px; line-height:1.5;}
+  #pmCfgPop ul{list-style:none; margin:0; padding:0; overflow-y:auto; flex:1; min-height:0;}
+  #pmCfgPop li{display:flex; align-items:center; gap:7px; padding:6px 6px; border-radius:8px; font-size:13px;}
+  #pmCfgPop li:hover{background:var(--bg);}
+  #pmCfgPop li.off .pc-name{color:var(--sub);}
+  #pmCfgPop li.ins-before{box-shadow:inset 0 2px 0 var(--primary);} #pmCfgPop li.ins-after{box-shadow:inset 0 -2px 0 var(--primary);}
+  #pmCfgPop .pc-grip{cursor:grab; color:#B0B8C1; font-size:12px; user-select:none;}
+  #pmCfgPop .pc-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:700;}
+  #pmCfgPop .pc-st{font-size:11px; color:var(--sub); flex-shrink:0;}
+  #pmCfgPop li button{border:1px solid var(--border); background:#fff; border-radius:5px; width:22px; height:22px; padding:0; font-size:10px; cursor:pointer; color:var(--sub); flex-shrink:0;}
+  #pmCfgPop li button:hover{border-color:var(--primary); color:var(--primary);}
+  #pmCfgPop input[type=checkbox]{width:16px; height:16px; accent-color:var(--primary); cursor:pointer; flex-shrink:0;}
+  #pmCfgPop .pc-acts{display:flex; gap:6px; margin-top:10px;}
+  #pmCfgPop .pc-acts button{flex:1; border:none; border-radius:8px; padding:8px; font-size:12.5px; font-weight:700; cursor:pointer; font-family:inherit; background:var(--bg); color:var(--text);}
+  #pmCfgPop .pc-acts button.pri{background:var(--primary); color:#fff;}
+  #pmCfgPop .pc-mode{font-size:11px; color:var(--sub); margin-top:8px;}
   .pm-new{grid-column:1/-1; border-top:2px solid var(--text); padding:8px 10px; display:flex; gap:8px; align-items:center; background:#fff;}
   .pm-new input{flex:0 1 320px; border:1px dashed var(--border); border-radius:9px; padding:6px 10px; font-family:inherit; font-size:13px; outline:none;}
   .pm-new input:focus{border-color:var(--primary); border-style:solid;}
@@ -1412,6 +1446,11 @@ function normalizeData(d){
   if(!Array.isArray(d.recur)) d.recur=[];
   /* 주간 프로젝트별 목표: { 'YYYY-MM-DD'(월요일): { 프로젝트이름|'_none': {done, items:[{id,text,done}]} } } */
   if(!d.wgoals||typeof d.wgoals!=='object'||Array.isArray(d.wgoals)) d.wgoals={};
+  /* 주간 표에 보일 프로젝트 행(내가 정한 목록): { order:[이름…], hidden:[이름…] } — 없으면 자동 */
+  if(d.pmRows!=null){
+    if(typeof d.pmRows!=='object'||!Array.isArray(d.pmRows.order)) delete d.pmRows;
+    else{ d.pmRows.order=d.pmRows.order.filter(n=>typeof n==='string'&&n); d.pmRows.hidden=Array.isArray(d.pmRows.hidden)?d.pmRows.hidden.filter(n=>typeof n==='string'):[]; }
+  }
   d.recur=d.recur.filter(r=>r&&typeof r==='object'); d.recur.forEach(normalizeRule);
   if(!d.cal||typeof d.cal!=='object'||Array.isArray(d.cal)) d.cal={};
   if(d.cal.brief==null) d.cal.brief=true; if(!/^\d{2}:\d{2}$/.test(d.cal.briefTime||'')) d.cal.briefTime='08:00';
@@ -1747,21 +1786,51 @@ function wgTidy(wk,name){
   const g=w[wgKey(name)]; if(g&&!g.done&&!(g.items||[]).length) delete w[wgKey(name)];
   if(!Object.keys(w).length) delete data.wgoals[wk];
 }
-function pmRows(dates){
+/* 자동 목록: 진행 중 + 이번 주 할일·목표가 있는 프로젝트 */
+function pmAutoNames(dates){
   const wk=fmt(curMonday), g=(data.wgoals&&data.wgoals[wk])||{};
   const inWeek=new Set();
   dates.forEach(d=>visible(fmt(d)).forEach(t=>inWeek.add(t.project||'')));
-  const names=[], seen=new Set(); const add=n=>{if(!seen.has(n)){seen.add(n); names.push(n);}};
+  const names=[], seen=new Set(); const add=n=>{if(n&&!seen.has(n)){seen.add(n); names.push(n);}};
   (data.projects||[]).forEach(p=>{if(p.name&&(p.status==='active'||inWeek.has(p.name)||g[p.name]))add(p.name);});
   [...inWeek].filter(n=>n).sort((a,b)=>a.localeCompare(b,'ko')).forEach(add);   /* 태그만 있는 프로젝트 */
   Object.keys(g).filter(k=>k!=='_none').forEach(add);                           /* 목표만 적어둔 프로젝트 */
-  add('');                                                                       /* 프로젝트 없음 */
-  return filterPrj==='all'?names:names.filter(n=>n===filterPrj);
+  return names;
 }
+/* 고를 수 있는 프로젝트 이름 전부 (프로젝트 + 할일 태그로만 있는 이름) */
+function pmCandidates(){
+  const out=[], seen=new Set(); const add=n=>{if(n&&!seen.has(n)){seen.add(n); out.push(n);}};
+  (data.projects||[]).forEach(p=>add(p.name)); pjGhostNames().forEach(add);
+  return out;
+}
+function pmCfg(){return data.pmRows&&Array.isArray(data.pmRows.order)?data.pmRows:null;}
+/* 표에 보일 행: rows(위→아래, 마지막은 '' = 프로젝트 없음) · done(이번 주 마무리로 접힌 것) · other(목록에 없는 프로젝트의 이번 주 할일) */
+function pmRows(dates){
+  const wk=fmt(curMonday), g=(data.wgoals&&data.wgoals[wk])||{};
+  if(filterPrj!=='all') return {rows:[filterPrj], done:[], other:[]};
+  const cfg=pmCfg(); let names;
+  if(!cfg) names=pmAutoNames(dates);
+  else{
+    const hidden=new Set(cfg.hidden), inOrder=new Set(cfg.order);
+    const exist=new Set(pmCandidates()); Object.keys(g).forEach(k=>{if(k!=='_none')exist.add(k);});
+    names=cfg.order.filter(n=>exist.has(n)&&!hidden.has(n));
+    /* 목록을 정한 뒤에 새로 만든 진행 중 프로젝트는 끝에 자동으로 붙임 */
+    (data.projects||[]).forEach(p=>{if(p.name&&p.status==='active'&&!inOrder.has(p.name)&&!hidden.has(p.name)&&!names.includes(p.name))names.push(p.name);});
+  }
+  const isDone=n=>!!(g[wgKey(n)]&&g[wgKey(n)].done);
+  const rows=names.filter(n=>!isDone(n)), done=names.filter(isDone);
+  if(isDone('')) done.push(''); else rows.push('');
+  /* 표에 행이 없는 프로젝트의 이번 주 할일은 '기타 프로젝트' 행에 모아서 사라지지 않게 */
+  const shown=new Set([...names,'']), other=new Set();
+  dates.forEach(d=>visible(fmt(d)).forEach(t=>{const n=t.project||''; if(!shown.has(n))other.add(n);}));
+  return {rows, done, other:[...other]};
+}
+let pmShowDone=false; try{pmShowDone=localStorage.getItem('wp_pmdone')==='1';}catch(e){}
+let _pmLast={rows:[],done:[]};
 function renderProjectMatrix(dates){
   const grid=document.getElementById('weekGrid'); grid.className='week-grid pm';
   const wk=fmt(curMonday), prevWk=fmt(addDays(curMonday,-7));
-  let html='<div class="pm-h pm-corner">PROJECT</div>';
+  let html=`<div class="pm-h pm-corner">PROJECT<button class="pm-cfg-btn${pmCfg()?' on':''}" data-wa="cfg" title="표에 보일 프로젝트와 순서 정하기">⚙</button></div>`;
   dates.forEach((d,i)=>{
     const ds=fmt(d), vt=visible(ds), dn=vt.filter(t=>t.done).length;
     const hol=holidayName(ds), flag=dueCountOn(ds), man=isManualDay(ds), hasLog=(data.logs[ds]||'').trim().length>0;
@@ -1771,11 +1840,13 @@ function renderProjectMatrix(dates){
       <div class="head-right">${flag?`<span class="hflag">🚩${flag}</span>`:''}<button class="ord-btn${man?' on':''}" data-ord="${ds}" title="${man?'내가 정한 순서 — 드래그하거나 ⋯ 메뉴로 바꿔요 (눌러서 자동 정렬로)':'자동 정렬 중 — 눌러서 내 순서 직접 정하기'}">${man?'①②③':'↕'}</button><div class="day-cnt ${vt.length>0&&dn===vt.length?'full':''}">${dn}/${vt.length}</div><button class="pm-log${hasLog?' has':''}" data-log="${ds}" title="업무 기록">📝</button></div>
     </div>`;
   });
-  pmRows(dates).forEach((name,ri)=>{
+  const R=pmRows(dates); _pmLast={rows:R.rows.filter(n=>n), done:R.done.filter(n=>n)};
+  let ri=0;
+  const rowHTML=(name)=>{
     const p=name?(data.projects||[]).find(x=>x.name===name):null;
     const c=name?(p?pjColor(p):projColor(name)):'#8B95A1';
     const g=wgGet(wk,name,false)||{done:false,items:[]};
-    const first=ri===0?' pm-row-first':'';
+    const first=ri++===0?' pm-row-first':'';
     let rt=0, rd=0; const cells=dates.map(d=>{const ds=fmt(d); const ts=visible(ds).filter(t=>(t.project||'')===name); rt+=ts.length; rd+=ts.filter(t=>t.done).length; return {ds,ts};});
     const prevG=!g.items.length?wgGet(prevWk,name,false):null;
     const carry=prevG?prevG.items.filter(x=>!x.done).length:0;
@@ -1784,20 +1855,33 @@ function renderProjectMatrix(dates){
       <div class="pm-ptop">
         <span class="pm-pchk${g.done?' on':''}" data-wa="pdone" title="이번 주 이 프로젝트 마무리">${g.done?'✓':''}</span>
         <span class="pm-pname${p?' link':''}" ${p?'data-wa="popen" title="프로젝트 열기"':''}>${name?esc(name):'프로젝트 없음'}</span>
-        ${st?`<span class="pm-pst" title="${st.label}">${st.icon}</span>`:''}${rt?`<span class="pm-pcnt">${rd}/${rt}</span>`:''}
+        ${st?`<span class="pm-pst" title="${st.label}">${st.icon}</span>`:''}${name&&!g.done&&filterPrj==='all'?`<span class="pm-move"><button data-wa="up" title="위로">▲</button><button data-wa="down" title="아래로">▼</button></span>`:''}${rt?`<span class="pm-pcnt">${rd}/${rt}</span>`:''}
       </div>
       <ul class="pm-goals">${g.items.map(it=>`<li class="${it.done?'done':''}" data-gid="${it.id}"><span class="pm-gchk" data-wa="gdone" title="목표 달성"></span><input class="pm-gin" value="${esc(it.text)}" title="고치기 · 다 지우면 삭제"></li>`).join('')}
         <li><span class="pm-gdot">+</span><input class="pm-gnew" placeholder="이번 주 목표"></li></ul>
       ${carry?`<button class="pm-carry" data-wa="carry" title="지난주에 못 끝낸 목표를 이번 주로 가져와요">↪ 지난주 목표 ${carry}개</button>`:''}
     </div>`;
     cells.forEach(({ds,ts})=>{
-      html+=`<div class="pm-cell${ds===todayStr?' today':''}${ts.length?'':' empty'}${first}" data-ds="${ds}" data-prj="${esc(name)}">
+      html+=`<div class="pm-cell${ds===todayStr?' today':''}${ts.length?'':' empty'}${g.done?' pdone':''}${first}" data-ds="${ds}" data-prj="${esc(name)}">
         <div class="task-list" data-ds="${ds}">${renderTaskList(ts,ds,true)}</div>
         <input class="add-input pm-add" data-ds="${ds}" data-prj="${esc(name)}" placeholder="+ 할일" title="14:00 = 시간 · ~8/15 = 기한 · ! = 높은 우선순위 (#이름을 쓰면 그 프로젝트로)">
       </div>`;
     });
-  });
-  html+=`<div class="pm-new"><input id="pmNewPrj" placeholder="+ 프로젝트 행 추가 (이름 입력 후 Enter)"><span>진행 중인 프로젝트와 이번 주 할일이 있는 프로젝트가 행으로 보여요 · 할일을 다른 칸으로 끌면 날짜·프로젝트가 함께, 왼쪽 프로젝트 이름 칸에 놓으면 날짜는 그대로 프로젝트만 바뀌어요</span></div>`;
+  };
+  R.rows.forEach(rowHTML);
+  /* 목록에 없는 프로젝트의 이번 주 할일 — 프로젝트는 그대로 두고 날짜만 옮길 수 있음 */
+  if(R.other.length){
+    const os=new Set(R.other), first=ri++===0?' pm-row-first':'';
+    html+=`<div class="pm-prjx${first}"><span class="pm-pname">기타 프로젝트</span><small>${R.other.map(esc).join(' · ')}<br>⚙에서 숨긴 프로젝트의 이번 주 할일</small></div>`;
+    dates.forEach(d=>{const ds=fmt(d); const ts=visible(ds).filter(t=>os.has(t.project||''));
+      html+=`<div class="pm-cell pm-oth${ds===todayStr?' today':''}${ts.length?'':' empty'}${first}" data-ds="${ds}" data-keep="1"><div class="task-list" data-ds="${ds}">${renderTaskList(ts,ds,true)}</div></div>`;});
+  }
+  /* 이번 주 마무리(☐ 체크)한 프로젝트는 접어둠 */
+  if(R.done.length){
+    html+=`<div class="pm-donebar" data-wa="dshow" title="눌러서 ${pmShowDone?'접기':'펼치기'}">✓ 이번 주 마무리한 프로젝트 ${R.done.length}개 ${pmShowDone?'▴ 접기':'▾ 보기'}</div>`;
+    if(pmShowDone) R.done.forEach(rowHTML);
+  }
+  html+=`<div class="pm-new"><input id="pmNewPrj" placeholder="+ 프로젝트 행 추가 (이름 입력 후 Enter)"><span>${pmCfg()?'⚙에서 고른 프로젝트가 고른 순서대로 보여요':'진행 중인 프로젝트와 이번 주 할일이 있는 프로젝트가 행으로 보여요 (⚙에서 직접 고르기)'} · ☐ 체크하면 이번 주 목록에서 접혀요 · 할일을 다른 칸으로 끌면 날짜·프로젝트가 함께, 왼쪽 프로젝트 이름 칸에 놓으면 날짜는 그대로 프로젝트만 바뀌어요</span></div>`;
   grid.innerHTML=html;
 }
 /* ===== 할일을 프로젝트로 옮기기 (끌어 놓기 공통) =====
@@ -1823,6 +1907,74 @@ function dropToProject(d,name){
 }
 function dragPayload(e){try{return JSON.parse(e.dataTransfer.getData('text/plain'));}catch(x){return null;}}
 function markDrop(el,sel){document.querySelectorAll(sel+'.drop-over').forEach(x=>{if(x!==el)x.classList.remove('drop-over');}); el.classList.add('drop-over');}
+/* 처음 손대는 순간 지금 보이는 목록을 그대로 '내 목록'으로 굳힘 */
+function pmEnsureCfg(){
+  if(!pmCfg()){
+    const all=pmCandidates(), shown=[..._pmLast.rows,..._pmLast.done];
+    data.pmRows={order:[...shown,...all.filter(n=>!shown.includes(n))], hidden:all.filter(n=>!shown.includes(n))};
+  }
+  return data.pmRows;
+}
+function pmMoveRow(name,dir){
+  const vis=_pmLast.rows; const i=vis.indexOf(name), nb=vis[i+dir]; if(i<0||!nb)return;
+  const cfg=pmEnsureCfg(); [name,nb].forEach(n=>{if(!cfg.order.includes(n))cfg.order.push(n);});
+  const a=cfg.order.indexOf(name), b=cfg.order.indexOf(nb); cfg.order[a]=nb; cfg.order[b]=name;
+  save(); renderWeek();
+}
+/* ⚙ 프로젝트 목록 창 */
+let pcDrag=null;
+function pmCfgList(){
+  const cfg=pmCfg(), all=pmCandidates();
+  if(!cfg){const shown=[..._pmLast.rows,..._pmLast.done]; return [...shown.map(n=>({n,on:true})),...all.filter(n=>!shown.includes(n)).map(n=>({n,on:false}))];}
+  const hidden=new Set(cfg.hidden), order=cfg.order.filter(n=>all.includes(n));
+  const rest=all.filter(n=>!order.includes(n)).map(n=>{const p=(data.projects||[]).find(x=>x.name===n); return {n,on:!!(p&&p.status==='active'&&!hidden.has(n))};});
+  return [...order.map(n=>({n,on:!hidden.has(n)})),...rest];
+}
+function pmCfgCommit(list){
+  data.pmRows={order:list.map(x=>x.n), hidden:list.filter(x=>!x.on).map(x=>x.n)};
+  save(); renderWeek(); pmCfgRender(list);
+}
+function pmCfgRender(list){
+  const el=document.getElementById('pmCfgPop'); if(!el)return;
+  list=list||pmCfgList();
+  el._list=list;
+  el.innerHTML=`<div class="pc-title">📋 표에 보일 프로젝트</div>
+    <div class="pc-sub">체크한 프로젝트만 행으로 보여요 · ⋮⋮를 끌거나 ▲▼로 순서를 바꿔요</div>
+    <ul>${list.map((x,k)=>{const p=(data.projects||[]).find(q=>q.name===x.n); const c=p?pjColor(p):projColor(x.n); const st=p?PJ_STATUS[p.status]:null;
+      return `<li class="${x.on?'':'off'}" draggable="true" data-k="${k}"><span class="pc-grip">⋮⋮</span><input type="checkbox" data-pc="on" ${x.on?'checked':''}>
+        <span class="pc-name" style="color:${x.on?c:''}">${esc(x.n)}</span><span class="pc-st">${st?st.icon+' '+st.label:'🏷 태그'}</span>
+        <button data-pc="up" title="위로">▲</button><button data-pc="down" title="아래로">▼</button></li>`;}).join('')||'<li>아직 프로젝트가 없어요</li>'}</ul>
+    <div class="pc-mode">${pmCfg()?'지금: 내가 정한 목록 (새로 만든 진행 중 프로젝트는 끝에 자동 추가)':'지금: 자동 (진행 중 + 이번 주 할일 있는 프로젝트) — 바꾸면 내 목록으로 저장돼요'}</div>
+    <div class="pc-acts"><button data-pc="auto" title="내가 정한 목록을 지우고 자동으로">↺ 자동으로</button><button class="pri" data-pc="close">닫기</button></div>`;
+}
+function pmCfgOpen(anchor){
+  let el=document.getElementById('pmCfgPop');
+  if(el){el.remove(); return;}               /* 다시 누르면 닫기 */
+  el=document.createElement('div'); el.id='pmCfgPop'; document.body.appendChild(el);
+  pmCfgRender();
+  const r=anchor.getBoundingClientRect();
+  el.style.left=Math.max(10,Math.min(r.left,innerWidth-el.offsetWidth-10))+'px';
+  el.style.top=Math.min(r.bottom+6,Math.max(10,innerHeight-el.offsetHeight-10))+'px';
+  el.addEventListener('click',e=>{
+    const b=e.target.closest('[data-pc]'); if(!b)return;
+    const a=b.dataset.pc, list=el._list.slice(), li=b.closest('li'), k=li?+li.dataset.k:-1;
+    if(a==='close'){el.remove(); return;}
+    if(a==='auto'){delete data.pmRows; save(); renderWeek(); pmCfgRender(); toast('↺ 자동 목록으로 돌아왔어요'); return;}
+    if(a==='on'){list[k]={...list[k],on:b.checked}; pmCfgCommit(list); return;}
+    if(a==='up'||a==='down'){const j=k+(a==='up'?-1:1); if(j<0||j>=list.length)return; [list[k],list[j]]=[list[j],list[k]]; pmCfgCommit(list); return;}
+  });
+  el.addEventListener('dragstart',e=>{const li=e.target.closest('li[data-k]'); if(!li)return; pcDrag=+li.dataset.k; e.dataTransfer.setData('text/x-pc',''); e.dataTransfer.effectAllowed='move'; e.stopPropagation();});
+  el.addEventListener('dragover',e=>{if(pcDrag==null)return; const li=e.target.closest('li[data-k]'); e.preventDefault(); e.stopPropagation();
+    el.querySelectorAll('.ins-before,.ins-after').forEach(x=>x.classList.remove('ins-before','ins-after'));
+    if(li){const r=li.getBoundingClientRect(); li.classList.add(e.clientY<r.top+r.height/2?'ins-before':'ins-after');}});
+  el.addEventListener('drop',e=>{if(pcDrag==null)return; e.preventDefault(); e.stopPropagation();
+    const li=e.target.closest('li[data-k]'); const list=el._list.slice(); const [x]=list.splice(pcDrag,1);
+    let to=list.length; if(li){const k=+li.dataset.k, r=li.getBoundingClientRect(); to=(k>pcDrag?k-1:k)+(e.clientY<r.top+r.height/2?0:1);}
+    list.splice(to,0,x); pcDrag=null; pmCfgCommit(list);});
+  el.addEventListener('dragend',()=>{pcDrag=null; el.querySelectorAll('.ins-before,.ins-after').forEach(x=>x.classList.remove('ins-before','ins-after'));});
+}
+document.addEventListener('mousedown',e=>{const el=document.getElementById('pmCfgPop'); if(el&&!el.contains(e.target)&&!e.target.closest('[data-wa="cfg"]'))el.remove();});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){const el=document.getElementById('pmCfgPop'); if(el)el.remove();}});
 function pmAddGoal(name,text){
   text=(text||'').trim(); if(!text)return;
   const g=wgGet(fmt(curMonday),name,true); g.items.push({id:'g'+uid(),text,done:false}); save(); renderWeek();
@@ -1830,8 +1982,10 @@ function pmAddGoal(name,text){
 function pmNewProject(name){
   name=(name||'').trim(); if(!name)return;
   const ex=(data.projects||[]).find(p=>p.name===name);
-  if(ex){ if(ex.status!=='active'){ex.status='active'; save(); renderAll();} toast('📁 이미 있는 프로젝트예요: '+name); return; }
+  if(ex){ const cfg=pmCfg(); if(cfg){ if(!cfg.order.includes(name))cfg.order.push(name); cfg.hidden=cfg.hidden.filter(n=>n!==name); }
+    if(ex.status!=='active')ex.status='active'; save(); renderAll(); toast('📁 이미 있는 프로젝트라 표에 보이게 했어요: '+name); return; }
   data.projects.push({id:'p'+uid(),name,status:'active',note:'',start:todayStr,due:'',createdAt:todayStr,sections:[]});
+  const cfg=pmCfg(); if(cfg){ if(!cfg.order.includes(name))cfg.order.push(name); cfg.hidden=cfg.hidden.filter(n=>n!==name); }
   save(); renderAll(); updatePrjDatalist(); toast('📁 프로젝트를 만들었어요: '+name);
 }
 function pmFocus(sel,match){
@@ -2352,7 +2506,7 @@ _wg.addEventListener('drop',e=>{
     blDropFix(d,col.dataset.ds);
     /* 다른 프로젝트 행에 놓으면 프로젝트도 바뀜 (moveTaskTo 가 저장·렌더하므로 그 전에) */
     if(!findTask(d.ds,d.id)){toast('⚠️ 끌어온 것을 할일로 알아보지 못했어요 — 할일 카드를 잡고 다시 끌어보세요'); return;}
-    const prj=col.dataset.prj||'', changed=setTaskProject(findTask(d.ds,d.id),prj);
+    const prj=col.dataset.prj||'', changed=col.dataset.keep?false:setTaskProject(findTask(d.ds,d.id),prj);
     if(changed) toast(prj?`📁 '${prj}' 프로젝트로 옮겼어요`:'📁 프로젝트에서 뺐어요');
     /* 같은 날 다른 프로젝트 행에 놓은 경우: moveTaskTo 는 '같은 날·같은 자리'면 아무것도 안 하고 끝나서
        (저장·다시 그리기도 안 함) 프로젝트만 바뀐 채 화면에 안 보였음 → 여기서 직접 저장·렌더 */
@@ -2420,9 +2574,13 @@ _wg.addEventListener('change',e=>{
 });
 _wg.addEventListener('click',e=>{
   const w=e.target.closest('[data-wa]');
+  if(w&&w.dataset.wa==='cfg'){pmCfgOpen(w); return;}
+  if(w&&w.dataset.wa==='dshow'){pmShowDone=!pmShowDone; try{localStorage.setItem('wp_pmdone',pmShowDone?'1':'0');}catch(x){} renderWeek(); return;}
   if(w){
     const row=w.closest('.pm-prj'), name=row.dataset.prj||'', wk=fmt(curMonday), a=w.dataset.wa;
-    if(a==='pdone'){const g=wgGet(wk,name,true); g.done=!g.done; wgTidy(wk,name); save(); renderWeek();}
+    if(a==='pdone'){const g=wgGet(wk,name,true); g.done=!g.done; wgTidy(wk,name); save(); renderWeek();
+      toast(g.done?`✓ '${name||'프로젝트 없음'}' 이번 주 마무리 — 아래 '마무리한 프로젝트'에 접어뒀어요`:`↩ '${name||'프로젝트 없음'}' 다시 표에 보여요`);}
+    else if(a==='up'||a==='down') pmMoveRow(name,a==='up'?-1:1);
     else if(a==='gdone'){const g=wgGet(wk,name,false); const it=g&&g.items.find(x=>x.id===w.closest('li').dataset.gid); if(it){it.done=!it.done; save(); renderWeek();}}
     else if(a==='carry'){
       const pg=wgGet(fmt(addDays(curMonday,-7)),name,false); if(!pg)return;
@@ -2745,6 +2903,7 @@ function pjRename(p,newName){
   for(const ds in data.tasks)for(const t of data.tasks[ds]) if(t.project===old)t.project=newName;
   /* 주간 목표도 프로젝트 이름으로 묶여 있으니 함께 옮김 */
   for(const wk in (data.wgoals||{})){const w=data.wgoals[wk]; if(w[old]&&!w[newName]){w[newName]=w[old]; delete w[old];}}
+  if(pmCfg()){data.pmRows.order=data.pmRows.order.map(n=>n===old?newName:n); data.pmRows.hidden=data.pmRows.hidden.map(n=>n===old?newName:n);}
   p.name=newName; save(); renderAll();
 }
 function pjGotoWeek(ds){
