@@ -44,6 +44,11 @@
   .navbtn{border:1px solid var(--border); background:#fff; width:36px; height:36px; border-radius:10px; cursor:pointer;
     font-size:16px; color:var(--text); transition:.15s; display:flex; align-items:center; justify-content:center;}
   .navbtn:hover{background:var(--bg);}
+  .zoom-ctl{display:flex; align-items:center; border:1px solid var(--border); border-radius:10px; background:#fff; overflow:hidden; height:34px;}
+  .zoom-ctl.hidden{display:none;}
+  .zoom-ctl button{border:none; background:none; cursor:pointer; font-family:inherit; color:var(--text); height:100%; padding:0 9px; font-size:15px; font-weight:700;}
+  .zoom-ctl button:hover{background:var(--bg);}
+  .zoom-ctl #zoomPct{font-size:11.5px; color:var(--sub); padding:0 4px; min-width:44px; border-left:1px solid var(--border2); border-right:1px solid var(--border2);}
   /* 할일을 끄는 동안 ‹ › 버튼 = 지난 주로 / 다음 주로 놓는 곳 */
   body.dragging-task #wPrev,body.dragging-task #wNext{border:2px dashed var(--primary); color:var(--primary); background:var(--primary-light);}
   #wPrev.over,#wNext.over{background:var(--primary)!important; color:#fff!important; transform:scale(1.12);}
@@ -1013,6 +1018,9 @@
         <button class="tab" data-view="month">월간</button>
         <button class="tab" data-view="project">📁 프로젝트</button>
         <button class="tab" data-view="timer">⏱ 타이머</button>
+      </div>
+      <div class="zoom-ctl hidden" id="zoomCtl" title="화면 확대·축소 — Ctrl+휠, Ctrl + / Ctrl - , Ctrl+0 = 100%">
+        <button data-z="-1" title="축소 (Ctrl -)">−</button><button data-z="0" id="zoomPct" title="100%로 (Ctrl+0)">100%</button><button data-z="1" title="확대 (Ctrl +)">+</button>
       </div>
       <button class="today-btn" id="ftSoundBtn" title="알람 소리 켜기/끄기">🔔</button>
       <button class="today-btn" id="ftPinBtn" title="항상 위에 고정">📌</button>
@@ -2145,6 +2153,20 @@ function setWidget(on){widgetMode=on; try{localStorage.setItem('wp_widget',on?'1
    폭은 사용자가 창 가장자리를 끌어 바꾸면 기억(wp_dock_w), 항상 위는 📌로 켜고 끔(wp_dock_pin, 기본 켜짐).
    브라우저에선 electronAPI 가 없어 예전처럼 화면 안에서만 위젯으로 바뀜 */
 const HAS_DOCK=!!(window.electronAPI&&window.electronAPI.setDock);
+
+/* ===== 화면 확대·축소 (윈도우·맥 Electron 앱) =====
+   실제 확대는 main.js 가 처리 (Ctrl+휠 · Ctrl +/- · Ctrl+0, 배율 기억). 여기선 위쪽 − 100% + 버튼과 표시만.
+   웹·아이폰은 브라우저 자체 확대(핀치·Ctrl+휠)를 그대로 씀 */
+(function(){
+  const api=window.electronAPI; if(!api||!api.zoom)return;
+  const box=document.getElementById('zoomCtl'), pct=document.getElementById('zoomPct'); if(!box)return;
+  let shown=false;
+  const show=f=>{const p=Math.round(f*100)+'%'; pct.textContent=p; if(shown)toast('🔍 화면 '+p); shown=true;};
+  box.classList.remove('hidden');
+  box.addEventListener('click',e=>{const b=e.target.closest('[data-z]'); if(b)api.zoom(+b.dataset.z);});
+  api.onZoom(show);
+  api.getZoom().then(f=>{pct.textContent=Math.round(f*100)+'%';});
+})();
 function dockPinned(){try{return localStorage.getItem('wp_dock_pin')!=='0';}catch(e){return true;}}
 function dockWidth(){try{const w=+localStorage.getItem('wp_dock_w'); return w>=300&&w<=1200?w:380;}catch(e){return 380;}}
 function renderDockPin(){

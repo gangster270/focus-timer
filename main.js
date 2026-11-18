@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, screen } = require('electron');
 const path = require('path');
+const fs = require('fs');
 
 let win = null;
 const NORMAL = { width: 540, height: 860 };
@@ -25,7 +26,51 @@ function createWindow() {
   });
   win.maximize();
   win.loadFile('index.html');
+  setupZoom(win);
 }
+
+/* ===== 화면 확대·축소 =====
+   Ctrl+휠, Ctrl + = / + / - (숫자패드 포함), Ctrl+0 = 100%. 맥은 Cmd. 배율은 다음 실행 때도 유지.
+   Electron 은 Ctrl+휠을 'zoom-changed' 로 알려주기만 하고 직접 확대하지 않아서 여기서 처리 */
+const ZOOM_STEPS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
+const zoomFile = () => path.join(app.getPath('userData'), 'zoom.json');
+function loadZoom() {
+  try { const z = JSON.parse(fs.readFileSync(zoomFile(), 'utf8')).factor; if (z >= 0.5 && z <= 2) return z; } catch (e) {}
+  return 1;
+}
+let zoomSaveTimer = null;
+function applyZoom(w, factor) {
+  factor = Math.max(0.5, Math.min(2, Math.round(factor * 100) / 100));
+  w.webContents.setZoomFactor(factor);
+  w.webContents.send('zoom-changed', factor);
+  clearTimeout(zoomSaveTimer);
+  zoomSaveTimer = setTimeout(() => { try { fs.writeFileSync(zoomFile(), JSON.stringify({ factor })); } catch (e) {} }, 400);
+  return factor;
+}
+function stepZoom(w, dir) {
+  const cur = w.webContents.getZoomFactor();
+  if (dir === 0) return applyZoom(w, 1);
+  const next = dir > 0 ? ZOOM_STEPS.find(s => s > cur + 0.001) : [...ZOOM_STEPS].reverse().find(s => s < cur - 0.001);
+  return applyZoom(w, next || cur);
+}
+function setupZoom(w) {
+  const wc = w.webContents;
+  wc.on('did-finish-load', () => applyZoom(w, loadZoom()));
+  wc.on('zoom-changed', (_e, dir) => stepZoom(w, dir === 'in' ? 1 : -1));   /* Ctrl+휠 */
+  wc.on('before-input-event', (e, input) => {
+    if (input.type !== 'keyDown' || !(input.control || input.meta) || input.alt) return;
+    const k = input.key, c = input.code;
+    let dir = null;
+    if (k === '=' || k === '+' || c === 'NumpadAdd' || c === 'Equal') dir = 1;
+    else if (k === '-' || k === '_' || c === 'NumpadSubtract' || c === 'Minus') dir = -1;
+    else if (k === '0' || c === 'Numpad0' || c === 'Digit0') dir = 0;
+    if (dir === null) return;
+    e.preventDefault();   /* 숨은 기본 메뉴의 확대 단축키와 겹쳐 두 번 커지지 않게 */
+    stepZoom(w, dir);
+  });
+}
+ipcMain.handle('zoom', (_e, dir) => (win ? stepZoom(win, dir) : 1));
+ipcMain.handle('get-zoom', () => (win ? win.webContents.getZoomFactor() : 1));
 
 app.whenReady().then(createWindow);
 
